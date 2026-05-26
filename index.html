@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEON_VITAL // Centralized Cloud Hub</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&display=swap');
@@ -42,7 +38,6 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between antialiased selection:bg-cyan-500 selection:text-black">
 
-    <!-- LOGIN PANEL -->
     <div id="login-screen" class="fixed inset-0 z-50 bg-[#09090e] flex flex-col justify-center items-center p-4">
         <div class="w-full max-w-sm bg-[#12121a] border border-gray-800 rounded-xl p-6 shadow-2xl">
             <div class="text-center mb-6">
@@ -64,7 +59,6 @@
         </div>
     </div>
 
-    <!-- MAIN APP STRUCTURE -->
     <header class="bg-[#12121a] border-b border-gray-800 p-4 flex justify-between items-center sticky top-0 z-40">
         <div class="flex items-center gap-3">
             <span class="font-bold text-base tracking-tight text-[#00f0ff]">NEON_VITAL</span>
@@ -77,7 +71,6 @@
 
     <main class="flex-grow container mx-auto max-w-md p-4 pb-24 overflow-x-hidden">
         
-        <!-- DASHBOARD TAB -->
         <div id="tab-dashboard" class="tab-content space-y-4">
             <div class="flex justify-between items-center">
                 <h2 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">Performance Dashboard</h2>
@@ -118,7 +111,6 @@
             </div>
         </div>
 
-        <!-- DAILY LOG TAB -->
         <div id="tab-dailylog" class="tab-content hidden space-y-4">
             <div class="bg-[#12121a] border border-gray-800 rounded-xl p-4">
                 <div class="flex justify-between items-center mb-3">
@@ -150,7 +142,6 @@
             </div>
         </div>
 
-        <!-- FOODS DATABASE TAB -->
         <div id="tab-foods" class="tab-content hidden space-y-4">
             <div class="bg-[#12121a] border border-gray-800 rounded-xl p-4 space-y-4">
                 <div class="flex justify-between items-center">
@@ -217,7 +208,6 @@
             </div>
         </div>
 
-        <!-- PROFILE TAB -->
         <div id="tab-profile" class="tab-content hidden space-y-4">
             <div class="bg-[#12121a] border border-gray-800 rounded-xl p-4 space-y-4">
                 <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-400">Macro Target Configuration</h3>
@@ -273,7 +263,6 @@
         </div>
     </main>
 
-    <!-- FLOATING MEAL COPY DIALOG -->
     <div id="copy-meal-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex flex-col justify-center items-center p-4">
         <div class="w-full max-w-xs bg-[#12121a] border border-gray-800 rounded-xl p-4 space-y-3">
             <h4 class="text-sm font-bold text-[#00f0ff] uppercase tracking-wide">Duplicate Meal Data</h4>
@@ -289,7 +278,6 @@
         </div>
     </div>
 
-    <!-- HISTORY MODAL -->
     <div id="history-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden flex flex-col justify-center items-center p-4">
         <div class="w-full max-w-sm bg-[#12121a] border border-gray-800 rounded-xl p-4 flex flex-col max-h-[80vh]">
             <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-3">
@@ -300,7 +288,6 @@
         </div>
     </div>
 
-    <!-- PERSISTENT NAVIGATION -->
     <nav class="bg-[#12121a] border-t border-gray-800 fixed bottom-0 left-0 right-0 z-40">
         <div class="container mx-auto max-w-md grid grid-cols-4 text-center">
             <button onclick="app.navigation.switchTab('dashboard')" id="nav-dashboard" class="py-3 flex flex-col items-center justify-center text-[#00f0ff] border-t-2 border-[#00f0ff] bg-[#00f0ff]/5">
@@ -322,7 +309,6 @@
         </div>
     </nav>
 
-    <!-- CORE LOGIC AND SUPABASE ENVIRONMENT RUNTIME -->
     <script>
         const SUPABASE_URL = "https://bvccmaadcezmqwczjdfa.supabase.co";
         const SUPABASE_KEY = "sb_publishable_noMR0qZ7qkGHOuf2LsxMtA_NfzYEHt2";
