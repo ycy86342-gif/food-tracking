@@ -455,7 +455,7 @@
                     document.getElementById(`nav-${tabId}`).className = "py-3 flex flex-col items-center justify-center text-[#00f0ff] border-t-2 border-[#00f0ff] bg-[#00f0ff]/5 transition-all";
                     
                     if (tabId === 'dashboard') await app.dashboard.render();
-                    if (tabId === 'dailylog') await app.diary.renderCalendar();
+                    if (tabId === 'dailylog') { await app.db.getGlobalFoods(); await app.diary.renderCalendar(); }
                     if (tabId === 'foods') { app.foods.clearForm(); await app.foods.renderCatalog(); }
                     if (tabId === 'profile') app.profile.renderProfile();
                 }
@@ -528,7 +528,7 @@
                     const payload = { name, brand, serving, protein, carbs, fat, sodium, sugar };
 
                     try {
-                        if (id) {
+                        if (id && id !== "") {
                             await app.db.updateGlobalFoodItem(id, payload);
                             alert("Database entry updated cleanly.");
                         } else {
@@ -562,12 +562,12 @@
 
             diary: {
                 filterSearchList: (mealKey) => {
-                    const query = document.getElementById(`search-food-${mealKey}`).value.toLowerCase();
+                    const query = document.getElementById(`search-food-${mealKey}`).value.toLowerCase().trim();
                     const select = document.getElementById(`select-food-${mealKey}`);
                     select.innerHTML = '<option value="">+ Choose Searched Item</option>';
                     
                     app.state.cachedGlobalFoods.forEach((f, idx) => {
-                        if (f.name.toLowerCase().includes(query) || f.brand.toLowerCase().includes(query)) {
+                        if (query === "" || f.name.toLowerCase().includes(query) || f.brand.toLowerCase().includes(query)) {
                             const option = document.createElement('option');
                             option.value = idx;
                             option.innerText = `${f.name} (${f.brand})`;
@@ -669,7 +669,7 @@
                                     <span class="text-gray-300">${loggedFood.name} <span class="text-[10px] text-gray-500">(${loggedFood.brand})</span></span>
                                     <div class="flex items-center gap-3">
                                         <span class="text-gray-400 text-[11px] bg-gray-900 px-1.5 py-0.5 rounded">${servingText}</span>
-                                        <button onclick="app.diary.removeFoodFromMeal('${lowKey}', ${fIdx})" class="text-[#ff007f] font-bold hover:text-red-400 cursor-pointer text-sm" title="Remove Entry">&times;</button>
+                                        <button onclick="app.diary.removeFoodFromMeal('${lowKey}', ${fIdx})" class="text-[#ff007f] font-bold hover:text-red-400 cursor-pointer text-base px-1" title="Remove Entry">&times;</button>
                                     </div>
                                 </div>
                             `;
@@ -768,10 +768,8 @@
                 removeFoodFromMeal: async (mealKey, idx) => {
                     if (!app.state.cachedLogs[app.state.selectedDate]?.meals[mealKey]) return;
                     
-                    // Remove array element locally
                     app.state.cachedLogs[app.state.selectedDate].meals[mealKey].foods.splice(idx, 1);
                     
-                    // Push clean structural log modifications back upstream to cloud database
                     await app.db.saveMealLog(
                         app.state.currentUser, 
                         app.state.selectedDate, 
@@ -779,7 +777,6 @@
                         app.state.cachedLogs[app.state.selectedDate].meals[mealKey]
                     );
                     
-                    // Re-render user view pipelines
                     await app.diary.renderCalendar();
                 },
                 handleMealPhotoUpload: (event, mealKey) => {
