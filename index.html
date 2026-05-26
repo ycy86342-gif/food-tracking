@@ -1,3 +1,23 @@
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+// Initialize Supabase client
+const supabase = supabase.createClient('https://bvccmaadcezmqwczjdfa.supabase.co', 'sb_publishable_noMR0qZ7qkGHOuf2LsxMtA_NfzYEHt2');
+
+app.db = {
+    // Get all foods from your "global_foods" table
+    getGlobalFoods: async () => {
+        let { data } = await supabase.from('global_foods').select('*');
+        return data || [];
+    },
+
+    // Save a new food item
+    saveGlobalFoodItem: async (foodObject) => {
+        const { data, error } = await supabase
+            .from('global_foods')
+            .insert([foodObject]);
+        if (error) throw new Error(error.message);
+    }
+};
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
