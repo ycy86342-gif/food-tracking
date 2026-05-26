@@ -62,7 +62,7 @@
     <header class="bg-[#12121a] border-b border-gray-800 p-4 flex justify-between items-center sticky top-0 z-40">
         <div class="flex items-center gap-3">
             <span class="font-bold text-base tracking-tight text-[#00f0ff]">NEON_VITAL</span>
-            <span class="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded font-mono" id="current-user-tag">-</span>
+            <span class="text-xs bg-gray-880 text-gray-300 px-2 py-0.5 rounded font-mono" id="current-user-tag">-</span>
         </div>
         <button onclick="app.auth.logout()" class="text-gray-400 hover:text-[#ff007f] transition-colors cursor-pointer">
             <i data-lucide="log-out" class="w-4 h-4"></i>
@@ -335,7 +335,7 @@
                     return app.state.cachedGlobalFoods;
                 },
                 saveGlobalFoodItem: async (food) => {
-                    const identityKey = `${food.name.toLowerCase()}/${food.brand.toLowerCase()}`;
+                    const identityKey = `${food.name.toLowerCase().trim()}/${food.brand.toLowerCase().trim()}`;
                     const { data: existing } = await _supabase.from('global_foods').select('id').eq('identity_key', identityKey);
                     if (existing && existing.length > 0) {
                         throw new Error(`Entry conflict: [${food.name} (${food.brand})] already matches a catalog asset.`);
@@ -349,7 +349,14 @@
                     if (error) throw error;
                 },
                 updateGlobalFoodItem: async (id, food) => {
-                    const identityKey = `${food.name.toLowerCase()}/${food.brand.toLowerCase()}`;
+                    const identityKey = `${food.name.toLowerCase().trim()}/${food.brand.toLowerCase().trim()}`;
+                    
+                    // Verify if identity key belongs to someone else to avoid crashing unique key constraints
+                    const { data: existing } = await _supabase.from('global_foods').select('id').eq('identity_key', identityKey).neq('id', id);
+                    if (existing && existing.length > 0) {
+                        throw new Error(`Cannot update: Another entry with name "${food.name}" and brand "${food.brand}" already exists.`);
+                    }
+
                     const { error } = await _supabase.from('global_foods').update({
                         name: food.name, brand: food.brand, serving: food.serving,
                         protein: food.protein, carbs: food.carbs, fat: food.fat,
@@ -397,9 +404,15 @@
                     return map;
                 },
                 saveMealLog: async (userId, dateStr, mealKey, mealData) => {
+                    // Safe cleanup to make sure we don't pass broken objects
+                    const cleanFoods = Array.isArray(mealData.foods) ? mealData.foods : [];
                     const { error } = await _supabase.from('daily_meal_logs').upsert({
-                        user_id: userId, log_date: dateStr, meal_key: mealKey, foods: mealData.foods || [], photo: mealData.photo || null
-                    });
+                        user_id: userId, 
+                        log_date: dateStr, 
+                        meal_key: mealKey, 
+                        foods: cleanFoods, 
+                        photo: mealData.photo || null
+                    }, { onConflict: 'user_id,log_date,meal_key' });
                     if (error) console.error("Error saving meal log:", error);
                 }
             },
@@ -550,6 +563,8 @@
                 filterSearchList: (mealKey) => {
                     const query = document.getElementById(`search-food-${mealKey}`).value.toLowerCase().trim();
                     const select = document.getElementById(`select-food-${mealKey}`);
+                    
+                    // Clear and render choices based on user dynamic inputs
                     select.innerHTML = '<option value="">+ Choose Searched Item</option>';
                     
                     app.state.cachedGlobalFoods.forEach((f, idx) => {
@@ -648,18 +663,20 @@
                         });
 
                         let rowsHtml = '';
-                        mealData.foods.forEach((loggedFood, fIdx) => {
-                            const servingText = loggedFood.servingsUsed ? `${loggedFood.servingsUsed} serv` : `${loggedFood.amountUsed}g`;
-                            rowsHtml += `
-                                <div class="flex justify-between items-center text-xs font-mono bg-black/40 px-2.5 py-1.5 rounded-lg border border-gray-800">
-                                    <span class="text-gray-300">${loggedFood.name} <span class="text-[10px] text-gray-500">(${loggedFood.brand})</span></span>
-                                    <div class="flex items-center gap-3">
-                                        <span class="text-gray-400 text-[11px] bg-gray-900 px-1.5 py-0.5 rounded">${servingText}</span>
-                                        <button onclick="app.diary.removeFoodFromMeal('${lowKey}', ${fIdx})" class="text-[#ff007f] font-bold hover:text-red-400 cursor-pointer text-base px-1" title="Remove Entry">&times;</button>
+                        if (Array.isArray(mealData.foods)) {
+                            mealData.foods.forEach((loggedFood, fIdx) => {
+                                const servingText = loggedFood.servingsUsed ? `${loggedFood.servingsUsed} serv` : `${loggedFood.amountUsed}g`;
+                                rowsHtml += `
+                                    <div class="flex justify-between items-center text-xs font-mono bg-black/40 px-2.5 py-1.5 rounded-lg border border-gray-800">
+                                        <span class="text-gray-300">${loggedFood.name} <span class="text-[10px] text-gray-500">(${loggedFood.brand})</span></span>
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-gray-400 text-[11px] bg-gray-900 px-1.5 py-0.5 rounded">${servingText}</span>
+                                            <button onclick="app.diary.removeFoodFromMeal('${lowKey}', ${fIdx})" class="text-[#ff007f] font-bold hover:text-red-400 cursor-pointer text-base px-1" title="Remove Entry">&times;</button>
+                                        </div>
                                     </div>
-                                </div>
-                            `;
-                        });
+                                `;
+                            });
+                        }
 
                         const card = document.createElement('div');
                         card.className = "border border-gray-800 bg-black/20 rounded-xl p-3 space-y-3";
@@ -740,6 +757,9 @@
 
                     if (!app.state.cachedLogs[app.state.selectedDate]) app.state.cachedLogs[app.state.selectedDate] = { meals: {} };
                     if (!app.state.cachedLogs[app.state.selectedDate].meals[mealKey]) app.state.cachedLogs[app.state.selectedDate].meals[mealKey] = { foods: [], photo: null };
+                    if (!Array.isArray(app.state.cachedLogs[app.state.selectedDate].meals[mealKey].foods)) {
+                        app.state.cachedLogs[app.state.selectedDate].meals[mealKey].foods = [];
+                    }
                     
                     app.state.cachedLogs[app.state.selectedDate].meals[mealKey].foods.push(instance);
                     
@@ -754,8 +774,10 @@
                 removeFoodFromMeal: async (mealKey, idx) => {
                     if (!app.state.cachedLogs[app.state.selectedDate]?.meals[mealKey]) return;
                     
+                    // Direct array splice out of memory cache
                     app.state.cachedLogs[app.state.selectedDate].meals[mealKey].foods.splice(idx, 1);
                     
+                    // Completely write back the newly structural array payload to clear out database row
                     await app.db.saveMealLog(
                         app.state.currentUser, 
                         app.state.selectedDate, 
@@ -993,7 +1015,7 @@
                     let p = 0, c = 0, f = 0;
                     if(mealsObj) {
                         Object.values(mealsObj).forEach(m => {
-                            if(m.foods) m.foods.forEach(fd => { 
+                            if(m && Array.isArray(m.foods)) m.foods.forEach(fd => { 
                                 p += Number(fd.protein || 0); 
                                 c += Number(fd.carbs || 0); 
                                 f += Number(fd.fat || 0); 
