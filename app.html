@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON_VITAL // Health Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+        
+        :root {
+            --bg-black: #050508;
+            --panel-dark: #0d0d14;
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff007f;
+            --neon-green: #39ff14;
+            --neon-red: #ff0033;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-black);
+            color: #ffffff;
+            font-size: 13px; /* Slightly smaller base font for high mobile density */
+        }
+
+        .font-cyber {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Neon Glow Utility */
+        .glow-cyan { text-shadow: 0 0 8px rgba(0, 240, 255, 0.6); }
+        .glow-pink { text-shadow: 0 0 8px rgba(255, 0, 127, 0.6); }
+        .border-neon { border-color: rgba(0, 240, 255, 0.3); }
+        .border-neon:focus { border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); }
+        
+        /* Custom scrollbar for mobile inputs */
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track { background: var(--panel-dark); }
+        ::-webkit-scrollbar-thumb { background: #222233; border-radius: 2px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-cyan-500 selection:text-black">
+
+    <div id="login-screen" class="fixed inset-0 z-50 bg-[#050508] flex flex-col justify-center items-center p-4">
+        <div class="w-full max-w-sm bg-[#0d0d14] border border-[rgba(0,240,255,0.2)] rounded-xl p-6 shadow-2xl shadow-cyan-950/20">
+            <div class="text-center mb-6">
+                <h1 class="font-cyber text-2xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#00f0ff] to-[#ff007f] glow-cyan">
+                    NEON_VITAL
+                </h1>
+                <p class="text-[11px] text-gray-400 mt-1 uppercase tracking-wider">Unified Cross-User Bio-Engine</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-[11px] uppercase tracking-wider text-gray-400 mb-1">User Identifier</label>
+                    <input type="text" id="login-username" class="w-full bg-black/50 border border-gray-800 rounded px-3 py-2 text-white text-sm focus:outline-none border-neon" placeholder="e.g., cyber_user">
+                </div>
+                <div>
+                    <label class="block text-[11px] uppercase tracking-wider text-gray-400 mb-1">Passkey</label>
+                    <input type="password" id="login-password" class="w-full bg-black/50 border border-gray-800 rounded px-3 py-2 text-white text-sm focus:outline-none border-neon" placeholder="••••••••">
+                </div>
+                <button onclick="app.auth.login()" class="w-full bg-transparent border border-[#00f0ff] text-[#00f0ff] hover:bg-[#00f0ff]/10 font-cyber font-bold py-2 rounded transition-all duration-200 uppercase text-xs tracking-widest mt-2 cursor-pointer">
+                    Initialize Session
+                </button>
+            </div>
+            <p class="text-[10px] text-center text-gray-500 mt-4 italic">Note: Any unique user ID registers a mock account. Food database remains global.</p>
+        </div>
+    </div>
+
+    <header class="bg-[#0d0d14] border-b border-gray-900 p-3 flex justify-between items-center sticky top-0 z-40">
+        <div>
+            <span class="font-cyber font-bold text-sm tracking-wider text-[#00f0ff] glow-cyan">NEON_VITAL</span>
+            <span class="text-[10px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded ml-2 uppercase font-mono" id="current-user-tag">User: -</span>
+        </div>
+        <button onclick="app.auth.logout()" class="text-gray-400 hover:text-[#ff007f] transition-colors">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+        </button>
+    </header>
+
+    <main class="flex-grow container mx-auto max-w-md p-3 pb-24 overflow-x-hidden">
+        
+        <div id="tab-dashboard" class="tab-content space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="font-cyber text-sm font-bold tracking-wider text-gray-300 uppercase">System Intelligence Dashboard</h2>
+                <div class="flex gap-1 bg-black/40 p-0.5 border border-gray-800 rounded">
+                    <button onclick="app.dashboard.changeRange('week')" id="btn-range-week" class="text-[10px] uppercase px-2 py-1 rounded font-bold bg-[#00f0ff]/20 text-[#00f0ff]">Wk</button>
+                    <button onclick="app.dashboard.changeRange('month')" id="btn-range-month" class="text-[10px] uppercase px-2 py-1 rounded font-bold text-gray-400">Mo</button>
+                    <button onclick="app.dashboard.changeRange('year')" id="btn-range-year" class="text-[10px] uppercase px-2 py-1 rounded font-bold text-gray-400">Yr</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-4 gap-2">
+                <div class="bg-[#0d0d14] p-2 border border-gray-900 rounded text-center">
+                    <p class="text-[10px] uppercase text-gray-400 tracking-tight">Calories</p>
+                    <p id="dash-avg-cal" class="font-cyber font-bold text-sm text-white mt-0.5">-</p>
+                </div>
+                <div class="bg-[#0d0d14] p-2 border border-gray-900 rounded text-center">
+                    <p class="text-[10px] uppercase text-[#ff007f] tracking-tight">Protein</p>
+                    <p id="dash-avg-protein" class="font-cyber font-bold text-sm text-white mt-0.5">-</p>
+                </div>
+                <div class="bg-[#0d0d14] p-2 border border-gray-900 rounded text-center">
+                    <p class="text-[10px] uppercase text-[#00f0ff] tracking-tight">Carbs</p>
+                    <p id="dash-avg-carbs" class="font-cyber font-bold text-sm text-white mt-0.5">-</p>
+                </div>
+                <div class="bg-[#0d0d14] p-2 border border-gray-900 rounded text-center">
+                    <p class="text-[10px] uppercase text-yellow-400 tracking-tight">Fat</p>
+                    <p id="dash-avg-fat" class="font-cyber font-bold text-sm text-white mt-0.5">-</p>
+                </div>
+            </div>
+
+            <div class="bg-[#0d0d14] border border-gray-900 rounded p-3">
+                <p class="text-[11px] uppercase tracking-wider text-gray-400 font-cyber mb-2">Nutritional Intake Chronology</p>
+                <div class="relative h-44 w-full">
+                    <canvas id="chart-nutrition"></canvas>
+                </div>
+            </div>
+
+            <div class="bg-[#0d0d14] border border-gray-900 rounded p-3">
+                <p class="text-[11px] uppercase tracking-wider text-gray-400 font-cyber mb-2">Biometric Telemetry Matrix</p>
+                <div class="relative h-44 w-full">
+                    <canvas id="chart-biometrics"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="tab-dailylog" class="tab-content hidden space-y-4">
+            <div class="bg-[#0d0d14] border border-gray-900 rounded p-3">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-cyber text-xs font-bold uppercase tracking-wider text-gray-300">Temporal Navigation Matrix</h3>
+                    <span id="calendar-month-year" class="text-xs font-cyber text-[#00f0ff]"></span>
+                </div>
+                
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-mono text-gray-500 mb-1">
+                    <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+                </div>
+                <div id="calendar-grid" class="grid grid-cols-7 gap-1">
+                    </div>
+            </div>
+
+            <div id="day-details-panel" class="bg-[#0d0d14] border border-gray-900 rounded p-3 space-y-3">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-2">
+                    <div>
+                        <h3 id="selected-date-title" class="font-cyber text-xs font-bold text-[#00f0ff] uppercase">Select a date from matrix</h3>
+                        <p class="text-[10px] text-gray-500 font-mono" id="selected-date-status"></p>
+                    </div>
+                    <div class="text-right text-[11px] font-mono space-y-0.5">
+                        <div>Cal: <span id="day-summary-cal" class="text-white font-bold">-</span></div>
+                        <div class="text-[10px] text-gray-400">
+                            P: <span id="day-summary-p" class="text-white">-</span> | 
+                            C: <span id="day-summary-c" class="text-white">-</span> | 
+                            F: <span id="day-summary-f" class="text-white">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2.5" id="meals-container">
+                    </div>
+            </div>
+        </div>
+
+        <div id="tab-foods" class="tab-content hidden space-y-4">
+            <div class="bg-[#0d0d14] border border-gray-900 rounded p-3 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-cyber text-xs font-bold uppercase tracking-wider text-gray-300">Global Database Registry</h3>
+                    <button onclick="app.foods.triggerLabelScanMock()" class="flex items-center gap-1 text-[11px] font-cyber text-black bg-[#00f0ff] px-2 py-1 rounded hover:bg-[#00f0ff]/80 cursor-pointer">
+                        <i data-lucide="scan-line" class="w-3 h-3"></i> Label Scanner Engine
+                    </button>
+                </div>
+                
+                <input type="file" id="ocr-mock-file" class="hidden" accept="image/*" onchange="app.foods.handleOcrExecution(event)">
+
+                <div id="food-form" class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="col-span-2 grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Food Identity Name</label>
+                            <input type="text" id="food-name" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon" placeholder="Oats">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Corporate Brand</label>
+                            <input type="text" id="food-brand" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon" placeholder="Quaker">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Serving Scale (grams)</label>
+                        <input type="number" id="food-serving" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon" placeholder="40">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Protein (g)</label>
+                        <input type="number" id="food-protein" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon" placeholder="5">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Carbohydrates (g)</label>
+                        <input type="number" id="food-carbs" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon" placeholder="27">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Fat Lipids (g)</label>
+                        <input type="number" id="food-fat" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon" placeholder="3">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Sodium (mg)</label>
+                        <input type="number" id="food-sodium" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Sugar Molecules (g)</label>
+                        <input type="number" id="food-sugar" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon" placeholder="1">
+                    </div>
+                    <div class="col-span-2 pt-1">
+                        <button onclick="app.foods.createNewFoodEntry()" class="w-full text-center py-1.5 rounded font-cyber text-xs uppercase font-bold border border-[#ff007f] text-[#ff007f] hover:bg-[#ff007f]/10 transition-colors cursor-pointer">
+                            Register Item to Public Core
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-[#0d0d14] border border-gray-900 rounded p-3 space-y-2">
+                <h3 class="font-cyber text-xs font-bold uppercase tracking-wider text-gray-400 mb-1">Synchronized Food Catalog</h3>
+                <div id="food-list-container" class="space-y-1.5 max-h-72 overflow-y-auto pr-1">
+                    </div>
+            </div>
+        </div>
+
+        <div id="tab-profile" class="tab-content hidden space-y-4">
+            <div class="bg-[#0d0d14] border border-gray-900 rounded p-3 space-y-3">
+                <h3 class="font-cyber text-xs font-bold uppercase tracking-wider text-gray-300">Macro Goal Configuration</h3>
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                        <label class="block text-[10px] text-[#ff007f] uppercase mb-0.5">Protein Goal (g)</label>
+                        <input type="number" id="goal-protein" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-[#00f0ff] uppercase mb-0.5">Carbs Goal (g)</label>
+                        <input type="number" id="goal-carbs" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-yellow-400 uppercase mb-0.5">Fat Goal (g)</label>
+                        <input type="number" id="goal-fat" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon">
+                    </div>
+                    <div class="col-span-3 pt-1">
+                        <button onclick="app.profile.saveMacroGoals()" class="w-full text-center py-1 bg-gray-900 hover:bg-gray-800 text-white rounded text-[11px] font-cyber uppercase tracking-wider transition-colors cursor-pointer">
+                            Commit Nutritional Targets
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-[#0d0d14] border border-gray-900 rounded p-3 space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-cyber text-xs font-bold uppercase tracking-wider text-gray-300">Biometric Metric Log</h3>
+                    <button onclick="app.profile.toggleHistoryModal(true)" class="text-[10px] border border-gray-700 hover:border-gray-500 rounded px-2 py-0.5 uppercase tracking-wide font-mono transition-colors text-gray-400 cursor-pointer">
+                        View History
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="col-span-2">
+                        <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Timeline Date (Scroll/Select)</label>
+                        <input type="date" id="bio-date" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon" font-mono>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Body Fat (%)</label>
+                        <input type="number" step="0.1" id="bio-fat" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon" placeholder="14.5">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 uppercase mb-0.5">Muscle Mass (kg)</label>
+                        <input type="number" step="0.1" id="bio-muscle" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none border-neon" placeholder="62.1">
+                    </div>
+                    <div class="col-span-2 pt-1">
+                        <button onclick="app.profile.addBiometricRecord()" class="w-full text-center py-1.5 rounded font-cyber text-xs uppercase font-bold border border-[#00f0ff] text-[#00f0ff] hover:bg-[#00f0ff]/10 transition-colors cursor-pointer">
+                            Inject Biomarker Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="copy-meal-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex flex-col justify-center items-center p-4">
+        <div class="w-full max-w-xs bg-[#0d0d14] border border-gray-800 rounded-lg p-4 space-y-3">
+            <h4 class="font-cyber text-xs font-bold text-[#00f0ff] uppercase tracking-wider">Duplicate Meal Vector</h4>
+            <p class="text-[11px] text-gray-400 leading-tight">Copying <span id="copy-source-meal-name" class="text-white font-bold"></span> content matrix across timeline.</p>
+            <div>
+                <label class="block text-[10px] uppercase text-gray-500 mb-1">Target Matrix Date</label>
+                <input type="date" id="copy-target-date" class="w-full bg-black border border-gray-800 rounded px-2 py-1 text-white focus:outline-none text-xs">
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button onclick="app.diary.executeMealCopy()" class="flex-1 bg-[#00f0ff] text-black font-cyber text-xs py-1 rounded font-bold uppercase tracking-wider cursor-pointer">Confirm</button>
+                <button onclick="app.diary.closeCopyModal()" class="flex-1 bg-gray-800 text-gray-300 font-cyber text-xs py-1 rounded uppercase tracking-wider cursor-pointer">Abort</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="history-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden flex flex-col justify-center items-center p-4">
+        <div class="w-full max-w-sm bg-[#0d0d14] border border-gray-800 rounded-xl p-4 flex flex-col max-h-[80vh]">
+            <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-3">
+                <h4 class="font-cyber text-xs font-bold text-[#ff007f] uppercase tracking-widest">Biometric Timeline Stream</h4>
+                <button onclick="app.profile.toggleHistoryModal(false)" class="text-gray-400 hover:text-white font-mono text-sm">&times;</button>
+            </div>
+            <div id="history-rows-container" class="flex-grow overflow-y-auto space-y-1.5 pr-1">
+                </div>
+        </div>
+    </div>
+
+    <nav class="bg-[#0d0d14] border-t border-gray-900 fixed bottom-0 left-0 right-0 z-40">
+        <div class="container mx-auto max-w-md grid grid-cols-4 text-center">
+            <button onclick="app.navigation.switchTab('dashboard')" id="nav-dashboard" class="py-2.5 flex flex-col items-center justify-center text-[#00f0ff] border-t-2 border-[#00f0ff] bg-[#00f0ff]/5 transition-all">
+                <i data-lucide="layout-dashboard" class="w-4 h-4 mb-0.5"></i>
+                <span class="text-[9px] font-cyber uppercase tracking-wider">Dashboard</span>
+            </button>
+            <button onclick="app.navigation.switchTab('dailylog')" id="nav-dailylog" class="py-2.5 flex flex-col items-center justify-center text-gray-500 border-t-2 border-transparent hover:text-gray-300 transition-all">
+                <i data-lucide="calendar" class="w-4 h-4 mb-0.5"></i>
+                <span class="text-[9px] font-cyber uppercase tracking-wider">Daily Log</span>
+            </button>
+            <button onclick="app.navigation.switchTab('foods')" id="nav-foods" class="py-2.5 flex flex-col items-center justify-center text-gray-500 border-t-2 border-transparent hover:text-gray-300 transition-all">
+                <i data-lucide="salad" class="w-4 h-4 mb-0.5"></i>
+                <span class="text-[9px] font-cyber uppercase tracking-wider">Foods</span>
+            </button>
+            <button onclick="app.navigation.switchTab('profile')" id="nav-profile" class="py-2.5 flex flex-col items-center justify-center text-gray-500 border-t-2 border-transparent hover:text-gray-300 transition-all">
+                <i data-lucide="sliders" class="w-4 h-4 mb-0.5"></i>
+                <span class="text-[9px] font-cyber uppercase tracking-wider">Profile</span>
+            </button>
+        </div>
+    </nav>
+
+    <script>
+        // Initialization Core Definitions
+        const app = {
+            state: {
+                currentUser: null,
+                activeTab: 'dashboard',
+                dashboardRange: 'week',
+                selectedDate: new Date().toISOString().split('T')[0],
+                copyState: { srcDate: null, srcMeal: null },
+                charts: { nutrition: null, biometrics: null }
+            },
+
+            // Interfaced Shared Browser Layer Database Logic
+            db: {
+                getGlobalFoods: () => JSON.parse(localStorage.getItem('nv_global_foods')) || [],
+                saveGlobalFoods: (data) => localStorage.setItem('nv_global_foods', JSON.stringify(data)),
+                getUserData: (user) => JSON.parse(localStorage.getItem(`nv_user_${user}`)) || {
+                    goals: { protein: 150, carbs: 200, fat: 70 },
+                    biometrics: [],
+                    logs: {} // structured mapping: { "YYYY-MM-DD": { meals: { breakfast: { foods: [], photo: null }, ... } } }
+                },
+                saveUserData: (user, data) => localStorage.setItem(`nv_user_${user}`, JSON.stringify(data)),
+                
+                initDefaults: () => {
+                    if (!localStorage.getItem('nv_global_foods')) {
+                        const sampleFoods = [
+                            { name: 'Chicken Breast', brand: 'Sysco Core', serving: 100, protein: 31, carbs: 0, fat: 3.6, sodium: 74, sugar: 0, image: 'rgba(255,0,127,0.2)' },
+                            { name: 'Brown Rice', brand: 'Uncle Bens', serving: 150, protein: 5, carbs: 45, fat: 2, sodium: 10, sugar: 0, image: 'rgba(0,240,255,0.2)' },
+                            { name: 'Avocado Whole', brand: 'Calavo', serving: 150, protein: 3, carbs: 12, fat: 22, sodium: 11, sugar: 1, image: 'rgba(57,255,20,0.2)' }
+                        ];
+                        localStorage.setItem('nv_global_foods', JSON.stringify(sampleFoods));
+                    }
+                }
+            },
+
+            // Authentication Interface Subsystem
+            auth: {
+                init: () => {
+                    const loggedInUser = sessionStorage.getItem('nv_session_user');
+                    if (loggedInUser) {
+                        app.state.currentUser = loggedInUser;
+                        document.getElementById('login-screen').classList.add('hidden');
+                        document.getElementById('current-user-tag').innerText = `User: ${loggedInUser}`;
+                        app.core.boot();
+                    }
+                },
+                login: () => {
+                    const user = document.getElementById('login-username').value.trim();
+                    if (!user) return alert('Enter valid User Identifier context.');
+                    sessionStorage.setItem('nv_session_user', user);
+                    app.state.currentUser = user;
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('current-user-tag').innerText = `User: ${user}`;
+                    app.core.boot();
+                },
+                logout: () => {
+                    sessionStorage.removeItem('nv_session_user');
+                    window.location.reload();
+                }
+            },
+
+            // Core Layout Coordination
+            navigation: {
+                switchTab: (tabId) => {
+                    app.state.activeTab = tabId;
+                    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+                    document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+                    
+                    document.querySelectorAll('nav button').forEach(btn => {
+                        btn.className = "py-2.5 flex flex-col items-center justify-center text-gray-500 border-t-2 border-transparent hover:text-gray-300 transition-all";
+                    });
+                    
+                    const activeBtn = document.getElementById(`nav-${tabId}`);
+                    activeBtn.className = "py-2.5 flex flex-col items-center justify-center text-[#00f0ff] border-t-2 border-[#00f0ff] bg-[#00f0ff]/5 transition-all";
+                    
+                    if (tabId === 'dashboard') app.dashboard.render();
+                    if (tabId === 'dailylog') app.diary.renderCalendar();
+                    if (tabId === 'foods') app.foods.renderCatalog();
+                    if (tabId === 'profile') app.profile.renderProfile();
+                }
+            },
+
+            // Food Management Layer Core System
+            foods: {
+                renderCatalog: () => {
+                    const foods = app.db.getGlobalFoods();
+                    const container = document.getElementById('food-list-container');
+                    container.innerHTML = '';
+                    
+                    foods.forEach((food) => {
+                        const cal = Math.round((food.protein * 4) + (food.carbs * 4) + (food.fat * 9));
+                        const item = document.createElement('div');
+                        item.className = "bg-black/40 border border-gray-900 rounded p-2 flex items-center justify-between gap-2 text-[11px]";
+                        item.innerHTML = `
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded flex-shrink-0 flex items-center justify-center font-cyber font-bold text-[8px] text-white" style="background: ${food.image || '#222'}; border: 1px solid rgba(255,255,255,0.1)">
+                                    ${food.name.substring(0,2).toUpperCase()}
+                                </div>
+                                <div>
+                                    <p class="font-cyber font-bold text-white tracking-tight">${food.name}/${food.brand}</p>
+                                    <p class="text-[10px] text-gray-400 font-mono">Serv: ${food.serving}g | P: ${food.protein}g | C: ${food.carbs}g | F: ${food.fat}g</p>
+                                </div>
+                            </div>
+                            <div class="text-right font-mono">
+                                <span class="text-[#00f0ff]">${cal} Cal</span>
+                            </div>
+                        `;
+                        container.appendChild(item);
+                    });
+                },
+                createNewFoodEntry: () => {
+                    const name = document.getElementById('food-name').value.trim();
+                    const brand = document.getElementById('food-brand').value.trim();
+                    const serving = parseFloat(document.getElementById('food-serving').value);
+                    const protein = parseFloat(document.getElementById('food-protein').value) || 0;
+                    const carbs = parseFloat(document.getElementById('food-carbs').value) || 0;
+                    const fat = parseFloat(document.getElementById('food-fat').value) || 0;
+                    const sodium = parseFloat(document.getElementById('food-sodium').value) || 0;
+                    const sugar = parseFloat(document.getElementById('food-sugar').value) || 0;
+
+                    if (!name || !brand || isNaN(serving)) {
+                        alert('Identity Name, Corporate Brand, and Valid serving scale sizes must be specified.');
+                        return;
+                    }
+
+                    const targetKey = `${name.toLowerCase()}/${brand.toLowerCase()}`;
+                    const globalFoods = app.db.getGlobalFoods();
+                    
+                    const exists = globalFoods.some(f => `${f.name.toLowerCase()}/${f.brand.toLowerCase()}` === targetKey);
+                    if (exists) {
+                        alert(`Rejection Rule Activated: Match found for asset index [${name}/${brand}]. Duplicate insertion failed.`);
+                        return;
+                    }
+
+                    // Generate stylized color hash proxy to map visual identity block assignment
+                    const colors = ['rgba(0,240,255,0.2)', 'rgba(255,0,127,0.2)', 'rgba(57,255,20,0.2)', 'rgba(255,255,0,0.2)'];
+                    const chosenColor = colors[Math.floor(Math.random() * colors.length)];
+
+                    globalFoods.push({ name, brand, serving, protein, carbs, fat, sodium, sugar, image: chosenColor });
+                    app.db.saveGlobalFoods(globalFoods);
+                    
+                    // Reset fields
+                    ['food-name', 'food-brand', 'food-serving', 'food-protein', 'food-carbs', 'food-fat', 'food-sodium', 'food-sugar'].forEach(id => {
+                        document.getElementById(id).value = '';
+                    });
+                    
+                    app.foods.renderCatalog();
+                },
+                triggerLabelScanMock: () => {
+                    document.getElementById('ocr-mock-file').click();
+                },
+                handleOcrExecution: (event) => {
+                    if(!event.target.files.length) return;
+                    alert("Optical Matrix Scanning Initiated... Extrapolating label structural elements.");
+                    
+                    // Artificial execution parameters mock insertion simulation
+                    setTimeout(() => {
+                        document.getElementById('food-name').value = "Cyber Fuel Nutrimix";
+                        document.getElementById('food-brand').value = "DexLabs";
+                        document.getElementById('food-serving').value = "50";
+                        document.getElementById('food-protein').value = "18";
+                        document.getElementById('food-carbs').value = "22";
+                        document.getElementById('food-fat').value = "5";
+                        document.getElementById('food-sodium').value = "120";
+                        document.getElementById('food-sugar').value = "2";
+                        alert("Telemetry Extrapolation Complete. Values loaded into edit vector storage registry mapping arrays.");
+                    }, 800);
+                }
+            },
+
+            // Daily Log and Calendar Execution Logic
+            diary: {
+                renderCalendar: () => {
+                    const grid = document.getElementById('calendar-grid');
+                    grid.innerHTML = '';
+                    
+                    const now = new Date();
+                    const year = now.getFullYear();
+                    const month = now.getMonth();
+                    
+                    const monthNames = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+                    document.getElementById('calendar-month-year').innerText = `${monthNames[month]} ${year}`;
+
+                    const firstDayIndex = new Date(year, month, 1).getDay();
+                    const totalDays = new Date(year, month + 1, 0).getDate();
+                    const todayStr = now.toISOString().split('T')[0];
+                    const userData = app.db.getUserData(app.state.currentUser);
+
+                    // Offset pad slots
+                    for (let i = 0; i < firstDayIndex; i++) {
+                        const cell = document.createElement('div');
+                        cell.className = "bg-transparent h-9";
+                        grid.appendChild(cell);
+                    }
+
+                    // Render operative calendar day instances
+                    for (let day = 1; day <= totalDays; day++) {
+                        const targetDate = new Date(year, month, day);
+                        const dateStr = targetDate.toISOString().split('T')[0];
+                        
+                        const isFuture = targetDate > now && dateStr !== todayStr;
+                        
+                        const cell = document.createElement('div');
+                        cell.innerText = day;
+                        
+                        let baseClasses = "h-9 rounded flex items-center justify-center font-mono text-[11px] relative cursor-pointer transition-all border ";
+                        
+                        // Check if stats exceed limit values
+                        let limitsExceeded = false;
+                        if (userData.logs[dateStr]) {
+                            const totals = app.core.calculateDayTotals(userData.logs[dateStr].meals);
+                            if (totals.protein > userData.goals.protein || 
+                                totals.carbs > userData.goals.carbs || 
+                                totals.fat > userData.goals.fat) {
+                                limitsExceeded = true;
+                            }
+                        }
+
+                        if (isFuture) {
+                            baseClasses += "bg-black/10 border-gray-950 text-gray-700 pointer-events-none";
+                        } else if (limitsExceeded) {
+                            baseClasses += "bg-[#ff0033] border-[#ff0033] text-white font-bold shadow-sm shadow-red-900";
+                        } else if (dateStr === app.state.selectedDate) {
+                            baseClasses += "bg-[#00f0ff]/10 border-[#00f0ff] text-[#00f0ff] font-bold";
+                        } else {
+                            baseClasses += "bg-[#0d0d14] border-gray-900 text-gray-300 hover:border-gray-700";
+                        }
+                        
+                        cell.className = baseClasses;
+                        if(!isFuture) {
+                            cell.onclick = () => {
+                                app.state.selectedDate = dateStr;
+                                app.diary.renderCalendar();
+                                app.diary.renderDayDetails();
+                            };
+                        }
+                        grid.appendChild(cell);
+                    }
+                    app.diary.renderDayDetails();
+                },
+                renderDayDetails: () => {
+                    document.getElementById('selected-date-title').innerText = `Matrix Node: ${app.state.selectedDate}`;
+                    const userData = app.db.getUserData(app.state.currentUser);
+                    const dayData = userData.logs[app.state.selectedDate] || { meals: {} };
+                    
+                    const totals = app.core.calculateDayTotals(dayData.meals);
+                    
+                    // Target specific node elements styling parameters
+                    const calEl = document.getElementById('day-summary-cal');
+                    const pEl = document.getElementById('day-summary-p');
+                    const cEl = document.getElementById('day-summary-c');
+                    const fEl = document.getElementById('day-summary-f');
+
+                    calEl.innerText = totals.calories;
+                    pEl.innerText = `${totals.protein}/${userData.goals.protein}g`;
+                    cEl.innerText = `${totals.carbs}/${userData.goals.carbs}g`;
+                    fEl.innerText = `${totals.fat}/${userData.goals.fat}g`;
+
+                    // Handle text logic coloring thresholds overrides
+                    const totalCalGoal = (userData.goals.protein * 4) + (userData.goals.carbs * 4) + (userData.goals.fat * 9);
+                    calEl.className = totals.calories > totalCalGoal ? "text-[#ff0033] font-bold" : "text-white font-bold";
+                    pEl.className = totals.protein > userData.goals.protein ? "text-[#ff0033]" : "text-white";
+                    cEl.className = totals.carbs > userData.goals.carbs ? "text-[#ff0033]" : "text-white";
+                    fEl.className = totals.fat > userData.goals.fat ? "text-[#ff0033]" : "text-white";
+
+                    // Dynamic structural generation for meals tracking configurations
+                    const mealTypes = ['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert'];
+                    const container = document.getElementById('meals-container');
+                    container.innerHTML = '';
+
+                    const globalFoods = app.db.getGlobalFoods();
+
+                    mealTypes.forEach(mealKey => {
+                        const lowKey = mealKey.toLowerCase();
+                        const mealData = dayData.meals[lowKey] || { foods: [], photo: null };
+                        
+                        const card = document.createElement('div');
+                        card.className = "border border-gray-900 bg-black/30 rounded p-2 space-y-2";
+                        
+                        // Food list options generator matching profile schema template mappings
+                        let foodOptionsHtml = `<option value="">+ Add Food Specimen</option>`;
+                        globalFoods.forEach((f, idx) => {
+                            foodOptionsHtml += `<option value="${idx}">${f.name}/${f.brand}</option>`;
+                        });
+
+                        // Active food lines render blocks mapping arrays output loop
+                        let rowsHtml = '';
+                        mealData.foods.forEach((loggedFood, fIdx) => {
+                            rowsHtml += `
+                                <div class="flex justify-between items-center text-[11px] font-mono bg-black/60 px-2 py-1 rounded border border-gray-950">
+                                    <span class="text-gray-300 text-ellipsis overflow-hidden whitespace-nowrap max-w-[180px]">${loggedFood.name}/${loggedFood.brand}</span>
+                                    <div class="flex items-center gap-2 flex-shrink-0">
+                                        <span class="text-gray-400">${loggedFood.amountUsed}g</span>
+                                        <button onclick="app.diary.removeFoodFromMeal('${lowKey}', ${fIdx})" class="text-[#ff007f] hover:text-red-400 font-bold">&times;</button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+
+                        card.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <span class="font-cyber text-[11px] uppercase text-gray-400 tracking-wide font-bold">${mealKey}</span>
+                                <div class="flex items-center gap-1.5">
+                                    <button onclick="app.diary.openCopyModal('${lowKey}')" class="text-[10px] text-[#00f0ff] uppercase tracking-tighter font-mono bg-[#00f0ff]/5 border border-[#00f0ff]/30 px-1.5 py-0.5 rounded cursor-pointer">Copy</button>
+                                    <button onclick="document.getElementById('photo-input-${lowKey}').click()" class="text-[10px] text-gray-400 hover:text-white transition-colors cursor-pointer">
+                                        <i data-lucide="camera" class="w-3 h-3"></i>
+                                    </button>
+                                    <input type="file" id="photo-input-${lowKey}" class="hidden" accept="image/*" onchange="app.diary.handleMealPhotoUpload(event, '${lowKey}')">
+                                </div>
+                            </div>
+
+                            ${mealData.photo ? `
+                                <div class="relative w-full h-16 rounded overflow-hidden border border-gray-800 bg-cover bg-center" style="background-image: url('${mealData.photo}')">
+                                    <button onclick="app.diary.removeMealPhoto('${lowKey}')" class="absolute top-1 right-1 bg-black/80 rounded-full w-4 h-4 flex items-center justify-center text-[10px] text-[#ff007f]">&times;</button>
+                                </div>
+                            ` : ''}
+
+                            <div class="space-y-1">${rowsHtml}</div>
+
+                            <div class="flex gap-1">
+                                <select id="select-food-${lowKey}" onchange="app.diary.addFoodToMealTrigger('${lowKey}')" class="bg-black border border-gray-800 text-gray-300 rounded px-1 py-0.5 text-[11px] focus:outline-none w-full max-w-[70%]">
+                                    ${foodOptionsHtml}
+                                </select>
+                                <input type="number" id="amount-food-${lowKey}" placeholder="Grams" class="bg-black border border-gray-800 text-white rounded px-1 py-0.5 text-[11px] focus:outline-none w-[30%]">
+                            </div>
+                        `;
+                        container.appendChild(card);
+                    });
+                    lucide.createIcons();
+                },
+                addFoodToMealTrigger: (mealKey) => {
+                    const select = document.getElementById(`select-food-${mealKey}`);
+                    const amountInput = document.getElementById(`amount-food-${mealKey}`);
+                    const foodIdx = select.value;
+                    const grams = parseFloat(amountInput.value);
+
+                    if (!foodIdx || isNaN(grams) || grams <= 0) {
+                        alert('Specify entry volume scale tracking weight units in grams.');
+                        select.value = "";
+                        return;
+                    }
+
+                    const globalFoods = app.db.getGlobalFoods();
+                    const selectedFoodBase = globalFoods[foodIdx];
+
+                    // Process dynamic metrics conversions scaling ratios
+                    const ratio = grams / selectedFoodBase.serving;
+                    const loggedInstance = {
+                        name: selectedFoodBase.name,
+                        brand: selectedFoodBase.brand,
+                        amountUsed: grams,
+                        protein: Number((selectedFoodBase.protein * ratio).toFixed(1)),
+                        carbs: Number((selectedFoodBase.carbs * ratio).toFixed(1)),
+                        fat: Number((selectedFoodBase.fat * ratio).toFixed(1)),
+                        sodium: Number((selectedFoodBase.sodium * ratio).toFixed(1)),
+                        sugar: Number((selectedFoodBase.sugar * ratio).toFixed(1))
+                    };
+
+                    const userData = app.db.getUserData(app.state.currentUser);
+                    if (!userData.logs[app.state.selectedDate]) userData.logs[app.state.selectedDate] = { meals: {} };
+                    if (!userData.logs[app.state.selectedDate].meals[mealKey]) userData.logs[app.state.selectedDate].meals[mealKey] = { foods: [], photo: null };
+                    
+                    userData.logs[app.state.selectedDate].meals[mealKey].foods.push(loggedInstance);
+                    app.db.saveUserData(app.state.currentUser, userData);
+                    
+                    // Reset inputs
+                    select.value = "";
+                    amountInput.value = "";
+                    
+                    app.diary.renderCalendar();
+                },
+                removeFoodFromMeal: (mealKey, foodIdx) => {
+                    const userData = app.db.getUserData(app.state.currentUser);
+                    if (userData.logs[app.state.selectedDate]?.meals[mealKey]?.foods) {
+                        userData.logs[app.state.selectedDate].meals[mealKey].foods.splice(foodIdx, 1);
+                        app.db.saveUserData(app.state.currentUser, userData);
+                        app.diary.renderCalendar();
+                    }
+                },
+                handleMealPhotoUpload: (event, mealKey) => {
+                    const file = event.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const userData = app.db.getUserData(app.state.currentUser);
+                        if (!userData.logs[app.state.selectedDate]) userData.logs[app.state.selectedDate] = { meals: {} };
+                        if (!userData.logs[app.state.selectedDate].meals[mealKey]) userData.logs[app.state.selectedDate].meals[mealKey] = { foods: [], photo: null };
+                        
+                        userData.logs[app.state.selectedDate].meals[mealKey].photo = reader.result;
+                        app.db.saveUserData(app.state.currentUser, userData);
+                        app.diary.renderDayDetails();
+                    };
+                    reader.readAsDataURL(file);
+                },
+                removeMealPhoto: (mealKey) => {
+                    const userData = app.db.getUserData(app.state.currentUser);
+                    if (userData.logs[app.state.selectedDate]?.meals[mealKey]) {
+                        userData.logs[app.state.selectedDate].meals[mealKey].photo = null;
+                        app.db.saveUserData(app.state.currentUser, userData);
+                        app.diary.renderDayDetails();
+                    }
+                },
+                openCopyModal: (mealKey) => {
+                    app.state.copyState.srcDate = app.state.selectedDate;
+                    app.state.copyState.srcMeal = mealKey;
+                    
+                    document.getElementById('copy-source-meal-name').innerText = `${mealKey.toUpperCase()} (${app.state.selectedDate})`;
+                    
+                    // Constraint parameter set to modern timeline ceilings indices limits
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    document.getElementById('copy-target-date').setAttribute('max', todayStr);
+                    document.getElementById('copy-target-date').value = todayStr;
+                    
+                    document.getElementById('copy-meal-modal').classList.remove('hidden');
+                },
+                closeCopyModal: () => {
+                    document.getElementById('copy-meal-modal').classList.add('hidden');
+                },
+                executeMealCopy: () => {
+                    const targetDateStr = document.getElementById('copy-target-date').value;
+                    if(!targetDateStr) return alert("Select appropriate timeline index.");
+                    
+                    if(new Date(targetDateStr) > new Date()) {
+                        return alert("Rejection Trigger: Targeted metrics coordinates point into undefined future frameworks.");
+                    }
+
+                    const userData = app.db.getUserData(app.state.currentUser);
+                    const sourceDay = userData.logs[app.state.copyState.srcDate];
+                    const sourceMealData = sourceDay?.meals[app.state.copyState.srcMeal];
+
+                    if (!sourceMealData || sourceMealData.foods.length === 0) {
+                        alert("No functional metrics objects localized inside source index block array context.");
+                        app.diary.closeCopyModal();
+                        return;
+                    }
+
+                    if (!userData.logs[targetDateStr]) userData.logs[targetDateStr] = { meals: {} };
+                    
+                    // Hard clone deep elements tracking mapping arrays payload parameters assignment structures
+                    userData.logs[targetDateStr].meals[app.state.copyState.srcMeal] = JSON.parse(JSON.stringify(sourceMealData));
+                    app.db.saveUserData(app.state.currentUser, userData);
+                    
+                    app.diary.closeCopyModal();
+                    app.state.selectedDate = targetDateStr;
+                    app.diary.renderCalendar();
+                }
+            },
+
+            // Dashboard Analytics Management Rendering Subsystem
+            dashboard: {
+                changeRange: (range) => {
+                    app.state.dashboardRange = range;
+                    ['week', 'month', 'year'].forEach(r => {
+                        const btn = document.getElementById(`btn-range-${r}`);
+                        if(r === range) {
+                            btn.className = "text-[10px] uppercase px-2 py-1 rounded font-bold bg-[#00f0ff]/20 text-[#00f0ff]";
+                        } else {
+                            btn.className = "text-[10px] uppercase px-2 py-1 rounded font-bold text-gray-400";
+                        }
+                    });
+                    app.dashboard.render();
+                },
+                render: () => {
+                    const userData = app.db.getUserData(app.state.currentUser);
+                    const logs = userData.logs;
+                    
+                    // Gather target chronological array sequence
+                    let dayCount = 7;
+                    if (app.state.dashboardRange === 'month') dayCount = 30;
+                    if (app.state.dashboardRange === 'year') dayCount = 365;
+
+                    const labels = [];
+                    const calorieDataset = [];
+                    const proteinDataset = [];
+                    const carbsDataset = [];
+                    const fatDataset = [];
+                    
+                    const fatCompDataset = [];
+                    const muscleCompDataset = [];
+
+                    let runningCalSum = 0, runningPSum = 0, runningCSum = 0, runningFSum = 0, loggedDaysCount = 0;
+
+                    for (let i = dayCount - 1; i >= 0; i--) {
+                        const d = new Date();
+                        d.setDate(d.getDate() - i);
+                        const dateStr = d.toISOString().split('T')[0];
+                        
+                        // Parse labels visual style formatting logic blocks
+                        labels.push(dateStr.substring(5)); // MM-DD format
+
+                        // Map out nutritional vectors indices parameter arrays logic maps
+                        if (logs[dateStr]) {
+                            const totals = app.core.calculateDayTotals(logs[dateStr].meals);
+                            calorieDataset.push(totals.calories);
+                            proteinDataset.push(totals.protein);
+                            carbsDataset.push(totals.carbs);
+                            fatDataset.push(totals.fat);
+                            
+                            runningCalSum += totals.calories;
+                            runningPSum += totals.protein;
+                            runningCSum += totals.carbs;
+                            runningFSum += totals.fat;
+                            loggedDaysCount++;
+                        } else {
+                            calorieDataset.push(0); proteinDataset.push(0); carbsDataset.push(0); fatDataset.push(0);
+                        }
+
+                        // Map biometric data fields inputs stream elements
+                        const bioRecord = userData.biometrics.find(b => b.date === dateStr);
+                        if (bioRecord) {
+                            fatCompDataset.push(bioRecord.fat);
+                            muscleCompDataset.push(bioRecord.muscle);
+                        } else {
+                            // Fetch trailing logic matching arrays sequence parameters proxy data mappings logic
+                            const lastKnown = userData.biometrics.filter(b => b.date <= dateStr).sort((a,b)=>b.date.localeCompare(a.date))[0];
+                            fatCompDataset.push(lastKnown ? lastKnown.fat : null);
+                            muscleCompDataset.push(lastKnown ? lastKnown.muscle : null);
+                        }
+                    }
+
+                    // Display overall calculated summary averages context logs
+                    const divisor = loggedDaysCount || 1;
+                    document.getElementById('dash-avg-cal').innerText = `${Math.round(runningCalSum / divisor)}`;
+                    document.getElementById('dash-avg-protein').innerText = `${Math.round(runningPSum / divisor)}g`;
+                    document.getElementById('dash-avg-carbs').innerText = `${Math.round(runningCSum / divisor)}g`;
+                    document.getElementById('dash-avg-fat').innerText = `${Math.round(runningFSum / divisor)}g`;
+
+                    // Generate or override chart logic execution pathways structures
+                    if (app.state.charts.nutrition) app.state.charts.nutrition.destroy();
+                    if (app.state.charts.biometrics) app.state.charts.biometrics.destroy();
+
+                    Chart.defaults.color = '#71717a';
+                    Chart.defaults.font.size = 9;
+
+                    const ctxNutri = document.getElementById('chart-nutrition').getContext('2d');
+                    app.state.charts.nutrition = new Chart(ctxNutri, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: 'Calories', data: calorieDataset, borderColor: '#fff', borderWidth: 1.5, yAxisID: 'yCal', pointRadius: 1 },
+                                { label: 'Protein', data: proteinDataset, borderColor: '#ff007f', borderWidth: 1, yAxisID: 'yMacros', pointRadius: 0 },
+                                { label: 'Carbs', data: carbsDataset, borderColor: '#00f0ff', borderWidth: 1, yAxisID: 'yMacros', pointRadius: 0 },
+                                { label: 'Fat', data: fatDataset, borderColor: '#eab308', borderWidth: 1, yAxisID: 'yMacros', pointRadius: 0 }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { grid: { display: false } },
+                                yCal: { position: 'left', grid: { color: '#18181b' } },
+                                yMacros: { position: 'right', grid: { display: false } }
+                            },
+                            plugins: { legend: { labels: { boxWidth: 8 } } }
+                        }
+                    });
+
+                    const ctxBio = document.getElementById('chart-biometrics').getContext('2d');
+                    app.state.charts.biometrics = new Chart(ctxBio, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: 'Body Fat %', data: fatCompDataset, backgroundColor: 'rgba(255, 0, 127, 0.3)', type: 'line', borderColor: '#ff007f', borderWidth: 1 },
+                                { label: 'Muscle kg', data: muscleCompDataset, backgroundColor: 'rgba(0, 240, 255, 0.4)' }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: { grid: { display: false } },
+                                y: { grid: { color: '#18181b' } }
+                            },
+                            plugins: { legend: { labels: { boxWidth: 8 } } }
+                        }
+                    });
+                }
+            },
+
+            // Profile Data Controls and Form Operations
+            profile: {
+                renderProfile: () => {
+                    const userData = app.db.getUserData(app.state.currentUser);
+                    document.getElementById('goal-protein').value = userData.goals.protein;
+                    document.getElementById('goal-carbs').value = userData.goals.carbs;
+                    document.getElementById('goal-fat').value = userData.goals.fat;
+                    
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    document.getElementById('bio-date').setAttribute('max', todayStr);
+                    document.getElementById('bio-date').value = todayStr;
+                },
+                saveMacroGoals: () => {
+                    const protein = parseFloat(document.getElementById('goal-protein').value) || 0;
+                    const carbs = parseFloat(document.getElementById('goal-carbs').value) || 0;
+                    const fat = parseFloat(document.getElementById('goal-fat').value) || 0;
+
+                    const userData = app.db.getUserData(app.state.currentUser);
+                    userData.goals = { protein, carbs, fat };
+                    app.db.saveUserData(app.state.currentUser, userData);
+                    alert("Macro tracking baseline metrics successfully calibrated and persistent across logs.");
+                },
+                addBiometricRecord: () => {
+                    const dateStr = document.getElementById('bio-date').value;
+                    const fat = parseFloat(document.getElementById('bio-fat').value);
+                    const muscle = parseFloat(document.getElementById('bio-muscle').value);
+
+                    if (!dateStr || isNaN(fat) || isNaN(muscle)) {
+                        alert("Input precise parameter entries into all targeted biomarker metrics channels.");
+                        return;
+                    }
+
+                    if (new Date(dateStr) > new Date()) {
+                        alert("Timeline Matrix Error: Forbidden input coordinates recorded out of system limits boundary bounds.");
+                        return;
+                    }
+
+                    const userData = app.db.getUserData(app.state.currentUser);
+                    
+                    // Filter existing records matching dates arrays sequence slots
+                    userData.biometrics = userData.biometrics.filter(b => b.date !== dateStr);
+                    userData.biometrics.push({ date: dateStr, fat, muscle });
+                    
+                    // Re-sort chronological sequencing order mappings patterns tracking fields
+                    userData.biometrics.sort((a,b) => b.date.localeCompare(a.date));
+                    
+                    app.db.saveUserData(app.state.currentUser, userData);
+                    
+                    document.getElementById('bio-fat').value = '';
+                    document.getElementById('bio-muscle').value = '';
+                    alert("Biometric telemetry point locked to sequence storage tracking arrays.");
+                },
+                toggleHistoryModal: (show) => {
+                    const modal = document.getElementById('history-modal');
+                    if (show) {
+                        modal.classList.remove('hidden');
+                        app.profile.renderHistoryRows();
+                    } else {
+                        modal.classList.add('hidden');
+                    }
+                },
+                renderHistoryRows: () => {
+                    const userData = app.db.getUserData(app.state.currentUser);
+                    const container = document.getElementById('history-rows-container');
+                    container.innerHTML = '';
+
+                    if(userData.biometrics.length === 0) {
+                        container.innerHTML = `<p class="text-center text-gray-500 py-4 font-mono text-[11px]">No active telemetry records initialized inside account profile node storage arrays.</p>`;
+                        return;
+                    }
+
+                    userData.biometrics.forEach((b, idx) => {
+                        const row = document.createElement('div');
+                        row.className = "bg-black/60 border border-gray-950 p-2 rounded flex justify-between items-center text-xs font-mono";
+                        row.innerHTML = `
+                            <div>
+                                <p class="text-[#00f0ff] font-bold">${b.date}</p>
+                                <p class="text-gray-400 text-[11px]">Fat: ${b.fat}% | Muscle: ${b.muscle}kg</p>
+                            </div>
+                            <button onclick="app.profile.deleteHistoryRecord(${idx})" class="text-[#ff007f] hover:text-red-400 bg-[#ff007f]/5 px-2 py-1 rounded transition-colors border border-[#ff007f]/20">
+                                Delete
+                            </button>
+                        `;
+                        container.appendChild(row);
+                    });
+                },
+                deleteHistoryRecord: (index) => {
+                    if(!confirm("Are you sure you want to delete this specific input record?")) return;
+                    const userData = app.db.getUserData(app.state.currentUser);
+                    userData.biometrics.splice(index, 1);
+                    app.db.saveUserData(app.state.currentUser, userData);
+                    app.profile.renderHistoryRows();
+                }
+            },
+
+            // Universal Calculations Engine Core Utilities
+            core: {
+                boot: () => {
+                    app.db.initDefaults();
+                    lucide.createIcons();
+                    app.navigation.switchTab('dashboard');
+                },
+                calculateDayTotals: (mealsObj) => {
+                    let calories = 0, protein = 0, carbs = 0, fat = 0, sodium = 0, sugar = 0;
+                    if (!mealsObj) return { calories, protein, carbs, fat, sodium, sugar };
+                    
+                    Object.values(mealsObj).forEach(meal => {
+                        if (meal.foods) {
+                            meal.foods.forEach(f => {
+                                protein += f.protein;
+                                carbs += f.carbs;
+                                fat += f.fat;
+                                sodium += f.sodium;
+                                sugar += f.sugar;
+                            });
+                        }
+                    });
+
+                    // Round final sum objects indices fields properties profiles values parameters maps paths
+                    return {
+                        calories: Math.round((protein * 4) + (carbs * 4) + (fat * 9)),
+                        protein: Number(protein.toFixed(1)),
+                        carbs: Number(carbs.toFixed(1)),
+                        fat: Number(fat.toFixed(1)),
+                        sodium: Math.round(sodium),
+                        sugar: Number(sugar.toFixed(1))
+                    };
+                }
+            }
+        };
+
+        // Window entry point execution orchestration binding handles
+        window.addEventListener('DOMContentLoaded', () => {
+            app.auth.init();
+        });
+    </script>
+</body>
+</html>
