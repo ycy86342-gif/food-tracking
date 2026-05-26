@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEON_VITAL // Centralized Cloud Hub</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
@@ -42,7 +38,6 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between antialiased selection:bg-cyan-500 selection:text-black">
 
-    <!-- LOGIN PANEL -->
     <div id="login-screen" class="fixed inset-0 z-50 bg-[#09090e] flex flex-col justify-center items-center p-4">
         <div class="w-full max-w-sm bg-[#12121a] border border-gray-800 rounded-xl p-6 shadow-2xl">
             <div class="text-center mb-6">
@@ -64,7 +59,6 @@
         </div>
     </div>
 
-    <!-- MAIN APP STRUCTURE -->
     <header class="bg-[#12121a] border-b border-gray-800 p-4 flex justify-between items-center sticky top-0 z-40">
         <div class="flex items-center gap-3">
             <span class="font-bold text-base tracking-tight text-[#00f0ff]">NEON_VITAL</span>
@@ -77,7 +71,6 @@
 
     <main class="flex-grow container mx-auto max-w-md p-4 pb-24 overflow-x-hidden">
         
-        <!-- DASHBOARD TAB -->
         <div id="tab-dashboard" class="tab-content space-y-4">
             <div class="flex justify-between items-center">
                 <h2 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">Performance Dashboard</h2>
@@ -118,7 +111,6 @@
             </div>
         </div>
 
-        <!-- DAILY LOG TAB -->
         <div id="tab-dailylog" class="tab-content hidden space-y-4">
             <div class="bg-[#12121a] border border-gray-800 rounded-xl p-4">
                 <div class="flex justify-between items-center mb-3">
@@ -150,7 +142,6 @@
             </div>
         </div>
 
-        <!-- FOODS DATABASE TAB -->
         <div id="tab-foods" class="tab-content hidden space-y-4">
             <div class="bg-[#12121a] border border-gray-800 rounded-xl p-4 space-y-4">
                 <div class="flex justify-between items-center">
@@ -211,7 +202,6 @@
             </div>
         </div>
 
-        <!-- PROFILE TAB -->
         <div id="tab-profile" class="tab-content hidden space-y-4">
             <div class="bg-[#12121a] border border-gray-800 rounded-xl p-4 space-y-4">
                 <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-400">Macro Target Configuration</h3>
@@ -267,7 +257,6 @@
         </div>
     </main>
 
-    <!-- FLOATING MEAL COPY DIALOG -->
     <div id="copy-meal-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex flex-col justify-center items-center p-4">
         <div class="w-full max-w-xs bg-[#12121a] border border-gray-800 rounded-xl p-4 space-y-3">
             <h4 class="text-sm font-bold text-[#00f0ff] uppercase tracking-wide">Duplicate Meal Data</h4>
@@ -283,7 +272,6 @@
         </div>
     </div>
 
-    <!-- HISTORY MODAL -->
     <div id="history-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden flex flex-col justify-center items-center p-4">
         <div class="w-full max-w-sm bg-[#12121a] border border-gray-800 rounded-xl p-4 flex flex-col max-h-[80vh]">
             <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-3">
@@ -294,7 +282,6 @@
         </div>
     </div>
 
-    <!-- PERSISTENT NAVIGATION -->
     <nav class="bg-[#12121a] border-t border-gray-800 fixed bottom-0 left-0 right-0 z-40">
         <div class="container mx-auto max-w-md grid grid-cols-4 text-center">
             <button onclick="app.navigation.switchTab('dashboard')" id="nav-dashboard" class="py-3 flex flex-col items-center justify-center text-[#00f0ff] border-t-2 border-[#00f0ff] bg-[#00f0ff]/5">
@@ -316,7 +303,6 @@
         </div>
     </nav>
 
-    <!-- CORE LOGIC AND SUPABASE ENVIRONMENT RUNTIME -->
     <script>
         const SUPABASE_URL = "https://bvccmaadcezmqwczjdfa.supabase.co";
         const SUPABASE_KEY = "sb_publishable_noMR0qZ7qkGHOuf2LsxMtA_NfzYEHt2";
@@ -327,18 +313,20 @@
                 currentUser: null,
                 activeTab: 'dashboard',
                 dashboardRange: 'week',
-                selectedDate: new Date().toLocaleDateString('en-CA'), // Formats to localized YYYY-MM-DD cleanly
+                selectedDate: new Date().toLocaleDateString('en-CA'),
                 copyState: { srcDate: null, srcMeal: null },
                 charts: { nutrition: null, biometrics: null },
                 cachedProfile: { protein: 150, carbs: 200, fat: 70 },
-                cachedLogs: {} 
+                cachedLogs: {},
+                cachedGlobalFoods: []
             },
 
             db: {
                 getGlobalFoods: async () => {
                     const { data, error } = await _supabase.from('global_foods').select('*').order('name', { ascending: true });
                     if (error) console.error(error);
-                    return data || [];
+                    app.state.cachedGlobalFoods = data || [];
+                    return app.state.cachedGlobalFoods;
                 },
                 saveGlobalFoodItem: async (food) => {
                     const identityKey = `${food.name.toLowerCase()}/${food.brand.toLowerCase()}`;
@@ -369,7 +357,6 @@
                     });
                 },
                 getBiometrics: async (userId) => {
-                    // Optimized order direction to support incremental chronological dashboard charts correctly
                     const { data, error } = await _supabase.from('user_biometrics').select('*').eq('user_id', userId).order('log_date', { ascending: true });
                     if (error) console.error(error);
                     return data ? data.map(b => ({ date: b.log_date, fat: Number(b.fat), muscle: Number(b.muscle), id: b.id })) : [];
@@ -395,9 +382,10 @@
                     return map;
                 },
                 saveMealLog: async (userId, dateStr, mealKey, mealData) => {
-                    await _supabase.from('daily_meal_logs').upsert({
+                    const { error } = await _supabase.from('daily_meal_logs').upsert({
                         user_id: userId, log_date: dateStr, meal_key: mealKey, foods: mealData.foods || [], photo: mealData.photo || null
                     });
+                    if (error) console.error("Error saving meal log:", error);
                 }
             },
 
@@ -451,7 +439,7 @@
                     container.innerHTML = '';
                     
                     foods.forEach((food) => {
-                        const cal = Math.round((food.protein * 4) + (food.carbs * 4) + (food.fat * 9));
+                        const cal = Math.round((Number(food.protein) * 4) + (Number(food.carbs) * 4) + (Number(food.fat) * 9));
                         const item = document.createElement('div');
                         item.className = "bg-black/20 border border-gray-800 rounded-lg p-3 flex items-center justify-between text-xs";
                         item.innerHTML = `
@@ -461,7 +449,7 @@
                                 </div>
                                 <div>
                                     <p class="font-semibold text-white">${food.name} <span class="text-gray-400 font-normal text-[11px]">(${food.brand})</span></p>
-                                    <p class="text-[11px] text-gray-400 mt-0.5 font-mono">Base: ${food.serving}g | P: ${food.protein}g | C: ${food.carbs}g | F: ${food.fat}g</p>
+                                    <p class="text-[11px] text-gray-400 mt-0.5 font-mono">Base Serving: ${food.serving}g | P: ${food.protein}g | C: ${food.carbs}g | F: ${food.fat}g</p>
                                 </div>
                             </div>
                             <div class="text-right font-mono text-[#00f0ff] font-medium">${cal} Cal</div>
@@ -525,7 +513,6 @@
 
                     const firstDayIndex = new Date(year, month, 1).getDay();
                     const totalDays = new Date(year, month + 1, 0).getDate();
-                    const todayStr = new Date().toLocaleDateString('en-CA');
 
                     app.state.cachedLogs = await app.db.getMealLogsMonth(app.state.currentUser);
 
@@ -536,7 +523,7 @@
                     for (let day = 1; day <= totalDays; day++) {
                         const targetDate = new Date(year, month, day);
                         const dateStr = targetDate.toLocaleDateString('en-CA');
-                        const isFuture = targetDate > now && dateStr !== todayStr;
+                        const isFuture = targetDate > now && dateStr !== new Date().toLocaleDateString('en-CA');
                         
                         const cell = document.createElement('div');
                         cell.innerText = day;
@@ -599,7 +586,7 @@
                     const container = document.getElementById('meals-container');
                     container.innerHTML = '';
 
-                    const globalFoods = await app.db.getGlobalFoods();
+                    const globalFoods = app.state.cachedGlobalFoods.length ? app.state.cachedGlobalFoods : await app.db.getGlobalFoods();
 
                     mealTypes.forEach(mealKey => {
                         const lowKey = mealKey.toLowerCase();
@@ -645,7 +632,7 @@
                                     <option value="grams">Grams</option>
                                 </select>
                             </div>
-                            <button onclick="app.diary.addFoodToMealTrigger('${lowKey}')" class="w-full bg-gray-800 hover:bg-gray-700 text-white text-xs py-1 rounded-md font-medium cursor-pointer transition-colors">+ Commit To Meal</button>
+                            <button onclick="app.diary.addFoodToMealTrigger('${lowKey}')" class="w-full bg-gray-800 hover:bg-gray-700 text-white text-xs py-1.5 rounded-md font-medium cursor-pointer transition-colors">+ Commit To Meal</button>
                         `;
                         container.appendChild(card);
                     });
@@ -660,31 +647,39 @@
                     const inputVal = parseFloat(valueInput.value);
                     const mode = unitSelect.value;
 
-                    if (!foodIdx || isNaN(inputVal) || inputVal <= 0) return alert('Input valid metric weight variables.');
+                    if (foodIdx === "" || isNaN(inputVal) || inputVal <= 0) return alert('Input valid selection and measurement attributes.');
 
-                    const globalFoods = await app.db.getGlobalFoods();
-                    const base = globalFoods[foodIdx];
+                    // FIXED: Target cached runtime foods dictionary index mapping array structure
+                    const base = app.state.cachedGlobalFoods[foodIdx];
+                    if (!base) return alert("Selected data item registry error.");
                     
                     let grams = 0;
                     let servingsUsed = null;
                     let amountUsed = 0;
 
+                    // FIXED: Changed column reference pointing to `base.serving` to match the exact DB column definition layout
+                    const baseServingWeight = Number(base.serving);
+
                     if (mode === 'servings') {
                         servingsUsed = Number(inputVal.toFixed(2));
-                        grams = inputVal * base.serving;
+                        grams = inputVal * baseServingWeight;
                         amountUsed = Math.round(grams);
                     } else {
                         grams = inputVal;
                         amountUsed = Math.round(grams);
+                        servingsUsed = Number((grams / baseServingWeight).toFixed(2));
                     }
 
-                    const ratio = grams / base.serving;
+                    const ratio = grams / baseServingWeight;
 
                     const instance = {
-                        name: base.name, brand: base.brand, amountUsed: amountUsed, servingsUsed: servingsUsed,
-                        protein: Number((base.protein * ratio).toFixed(1)),
-                        carbs: Number((base.carbs * ratio).toFixed(1)),
-                        fat: Number((base.fat * ratio).toFixed(1))
+                        name: base.name, 
+                        brand: base.brand, 
+                        amountUsed: amountUsed, 
+                        servingsUsed: servingsUsed,
+                        protein: Number((Number(base.protein) * ratio).toFixed(1)),
+                        carbs: Number((Number(base.carbs) * ratio).toFixed(1)),
+                        fat: Number((Number(base.fat) * ratio).toFixed(1))
                     };
 
                     if (!app.state.cachedLogs[app.state.selectedDate]) app.state.cachedLogs[app.state.selectedDate] = { meals: {} };
@@ -694,7 +689,6 @@
                     
                     await app.db.saveMealLog(app.state.currentUser, app.state.selectedDate, mealKey, app.state.cachedLogs[app.state.selectedDate].meals[mealKey]);
                     
-                    // Reset input elements
                     valueInput.value = '';
                     select.value = '';
                     
@@ -727,14 +721,13 @@
                     app.state.copyState.srcDate = app.state.selectedDate;
                     app.state.copyState.srcMeal = mealKey;
                     document.getElementById('copy-source-meal-name').innerText = `${mealKey.toUpperCase()}`;
-                    const todayStr = new Date().toLocaleDateString('en-CA');
-                    document.getElementById('copy-target-date').value = todayStr;
+                    document.getElementById('copy-target-date').value = new Date().toLocaleDateString('en-CA');
                     document.getElementById('copy-meal-modal').classList.remove('hidden');
                 },
                 closeCopyModal: () => document.getElementById('copy-meal-modal').classList.add('hidden'),
                 executeMealCopy: async () => {
                     const target = document.getElementById('copy-target-date').value;
-                    if(!target) return alert("Select valid calendar date map vector link target.");
+                    if(!target) return alert("Select valid calendar target date.");
 
                     const srcMealData = app.state.cachedLogs[app.state.copyState.srcDate]?.meals[app.state.copyState.srcMeal];
                     if(!srcMealData) return app.diary.closeCopyModal();
@@ -749,7 +742,6 @@
             dashboard: {
                 changeRange: async (range) => {
                     app.state.dashboardRange = range;
-                    // Update layout visuals active elements highlight state indicators
                     ['week', 'month', 'year'].forEach(r => {
                         const el = document.getElementById(`btn-range-${r}`);
                         if(r === range) {
@@ -777,7 +769,7 @@
                         const d = new Date();
                         d.setDate(d.getDate() - i);
                         const str = d.toLocaleDateString('en-CA');
-                        labels.push(str.substring(5)); // Truncate out year string section segment visually
+                        labels.push(str.substring(5));
 
                         if (logs[str]) {
                             const totals = app.core.calculateDayTotals(logs[str].meals);
@@ -788,7 +780,6 @@
                             calData.push(0); pData.push(0); cData.push(0); fData.push(0);
                         }
 
-                        // FIXED: Chronological scan lookup fallback algorithm mapping metrics across historical metrics tracking records array pipeline
                         const exactBio = biometrics.find(b => b.date === str);
                         if (exactBio) {
                             fatComp.push(exactBio.fat);
@@ -796,7 +787,7 @@
                         } else {
                             const pastBios = biometrics.filter(b => b.date <= str);
                             if (pastBios.length > 0) {
-                                const closest = pastBios[pastBios.length - 1]; // Selects latest metrics historical value tracking snapshot reference coordinate block
+                                const closest = pastBios[pastBios.length - 1];
                                 fatComp.push(closest.fat);
                                 muscleComp.push(closest.muscle);
                             } else {
@@ -868,8 +859,7 @@
                     document.getElementById('goal-protein').value = app.state.cachedProfile.protein;
                     document.getElementById('goal-carbs').value = app.state.cachedProfile.carbs;
                     document.getElementById('goal-fat').value = app.state.cachedProfile.fat;
-                    const todayStr = new Date().toLocaleDateString('en-CA');
-                    document.getElementById('bio-date').value = todayStr;
+                    document.getElementById('bio-date').value = new Date().toLocaleDateString('en-CA');
                 },
                 saveMacroGoals: async () => {
                     const protein = parseFloat(document.getElementById('goal-protein').value) || 0;
@@ -887,14 +877,13 @@
                     if(!date || isNaN(fat) || isNaN(muscle)) return alert("Fill in valid biomarker metrics values.");
 
                     try {
-                        // Fixed target execution stream mapping payload write execution directly down to remote cloud database node
                         await app.db.addBiometric(app.state.currentUser, { date, fat, muscle });
                         document.getElementById('bio-fat').value = ''; 
                         document.getElementById('bio-muscle').value = '';
-                        alert("Biometric telemetry indicators committed to cloud registry index nodes successfully.");
+                        alert("Biometric telemetry logged successfully.");
                     } catch(e) {
                         console.error(e);
-                        alert("Writing pipeline failed: Verify RLS authorization rules access grants parameters on target tables context.");
+                        alert("Writing pipeline failed. Double check your Supabase SQL policies.");
                     }
                 },
                 toggleHistoryModal: (show) => {
@@ -906,7 +895,6 @@
                     const container = document.getElementById('history-rows-container');
                     container.innerHTML = data.length ? '' : `<p class="text-center text-gray-500 py-6 text-xs">No logged biometric records found.</p>`;
                     
-                    // Display records in descending order for natural history reading list mechanics
                     const reversedData = [...data].reverse();
                     reversedData.forEach(b => {
                         const row = document.createElement('div');
@@ -922,7 +910,7 @@
                     });
                 },
                 deleteHistoryRecord: async (id) => {
-                    if(!confirm("Permanently drop selected biometric checkpoint entry parameter vector?")) return;
+                    if(!confirm("Permanently drop selected biometric checkpoint?")) return;
                     await app.db.deleteBiometric(id);
                     await app.profile.renderHistoryRows();
                 }
@@ -930,6 +918,7 @@
 
             core: {
                 boot: async () => {
+                    await app.db.getGlobalFoods();
                     app.state.cachedProfile = await app.db.getUserProfile(app.state.currentUser);
                     lucide.createIcons();
                     await app.navigation.switchTab('dashboard');
@@ -938,7 +927,11 @@
                     let p = 0, c = 0, f = 0;
                     if(mealsObj) {
                         Object.values(mealsObj).forEach(m => {
-                            if(m.foods) m.foods.forEach(fd => { p += fd.protein; c += fd.carbs; f += fd.fat; });
+                            if(m.foods) m.foods.forEach(fd => { 
+                                p += Number(fd.protein || 0); 
+                                c += Number(fd.carbs || 0); 
+                                f += Number(fd.fat || 0); 
+                            });
                         });
                     }
                     return { calories: Math.round((p*4)+(c*4)+(f*9)), protein: Number(p.toFixed(1)), carbs: Number(c.toFixed(1)), fat: Number(f.toFixed(1)) };
