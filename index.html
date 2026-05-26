@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NEON_VITAL // Centralized Cloud Hub</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght=300;400;500;600;700&display=swap');
         
         :root {
             --bg-black: #09090e;
@@ -38,6 +42,7 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between antialiased selection:bg-cyan-500 selection:text-black">
 
+    <!-- LOGIN PANEL -->
     <div id="login-screen" class="fixed inset-0 z-50 bg-[#09090e] flex flex-col justify-center items-center p-4">
         <div class="w-full max-w-sm bg-[#12121a] border border-gray-800 rounded-xl p-6 shadow-2xl">
             <div class="text-center mb-6">
@@ -59,6 +64,7 @@
         </div>
     </div>
 
+    <!-- MAIN APP STRUCTURE -->
     <header class="bg-[#12121a] border-b border-gray-800 p-4 flex justify-between items-center sticky top-0 z-40">
         <div class="flex items-center gap-3">
             <span class="font-bold text-base tracking-tight text-[#00f0ff]">NEON_VITAL</span>
@@ -71,6 +77,7 @@
 
     <main class="flex-grow container mx-auto max-w-md p-4 pb-24 overflow-x-hidden">
         
+        <!-- DASHBOARD TAB -->
         <div id="tab-dashboard" class="tab-content space-y-4">
             <div class="flex justify-between items-center">
                 <h2 class="text-sm font-semibold tracking-wide text-gray-300 uppercase">Performance Dashboard</h2>
@@ -111,6 +118,7 @@
             </div>
         </div>
 
+        <!-- DAILY LOG TAB -->
         <div id="tab-dailylog" class="tab-content hidden space-y-4">
             <div class="bg-[#12121a] border border-gray-800 rounded-xl p-4">
                 <div class="flex justify-between items-center mb-3">
@@ -142,16 +150,23 @@
             </div>
         </div>
 
+        <!-- FOODS DATABASE TAB -->
         <div id="tab-foods" class="tab-content hidden space-y-4">
             <div class="bg-[#12121a] border border-gray-800 rounded-xl p-4 space-y-4">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-400">Global Database Registry</h3>
-                    <button onclick="app.foods.triggerLabelScanMock()" class="flex items-center gap-1.5 text-xs font-medium text-black bg-[#00f0ff] px-3 py-1.5 rounded-lg hover:bg-[#00f0ff]/90 cursor-pointer">
-                        <i data-lucide="scan-line" class="w-3.5 h-3.5"></i> Label Scanner
-                    </button>
+                    <h3 id="food-form-title" class="text-xs font-semibold uppercase tracking-wider text-gray-400">Global Database Registry</h3>
+                    <div class="flex gap-2">
+                        <button id="food-clear-btn" onclick="app.foods.clearForm()" class="hidden text-xs font-medium text-gray-400 bg-gray-800 px-3 py-1.5 rounded-lg hover:bg-gray-700 cursor-pointer">
+                            Cancel Edit
+                        </button>
+                        <button onclick="app.foods.triggerLabelScanMock()" class="flex items-center gap-1.5 text-xs font-medium text-black bg-[#00f0ff] px-3 py-1.5 rounded-lg hover:bg-[#00f0ff]/90 cursor-pointer">
+                            <i data-lucide="scan-line" class="w-3.5 h-3.5"></i> Label Scanner
+                        </button>
+                    </div>
                 </div>
                 
                 <input type="file" id="ocr-mock-file" class="hidden" accept="image/*" onchange="app.foods.handleOcrExecution(event)">
+                <input type="hidden" id="food-editing-id" value="">
 
                 <div id="food-form" class="grid grid-cols-2 gap-3 text-sm">
                     <div class="col-span-2 grid grid-cols-2 gap-3">
@@ -189,7 +204,7 @@
                         <input type="number" id="food-sugar" class="w-full bg-black/40 border border-gray-800 rounded-lg px-3 py-1.5 text-white focus:outline-none border-neon">
                     </div>
                     <div class="col-span-2 pt-1">
-                        <button onclick="app.foods.createNewFoodEntry()" class="w-full text-center py-2 rounded-lg font-semibold border border-[#ff007f] text-[#ff007f] hover:bg-[#ff007f]/10 cursor-pointer transition-colors text-sm">
+                        <button id="food-submit-btn" onclick="app.foods.createNewFoodEntry()" class="w-full text-center py-2 rounded-lg font-semibold border border-[#ff007f] text-[#ff007f] hover:bg-[#ff007f]/10 cursor-pointer transition-colors text-sm">
                             Register Item Globally
                         </button>
                     </div>
@@ -197,11 +212,12 @@
             </div>
 
             <div class="bg-[#12121a] border border-gray-800 rounded-xl p-4 space-y-2">
-                <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Shared Food Catalog</h3>
+                <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-1">Shared Food Catalog (Click to Edit)</h3>
                 <div id="food-list-container" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
             </div>
         </div>
 
+        <!-- PROFILE TAB -->
         <div id="tab-profile" class="tab-content hidden space-y-4">
             <div class="bg-[#12121a] border border-gray-800 rounded-xl p-4 space-y-4">
                 <h3 class="text-xs font-semibold uppercase tracking-wider text-gray-400">Macro Target Configuration</h3>
@@ -257,6 +273,7 @@
         </div>
     </main>
 
+    <!-- FLOATING MEAL COPY DIALOG -->
     <div id="copy-meal-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex flex-col justify-center items-center p-4">
         <div class="w-full max-w-xs bg-[#12121a] border border-gray-800 rounded-xl p-4 space-y-3">
             <h4 class="text-sm font-bold text-[#00f0ff] uppercase tracking-wide">Duplicate Meal Data</h4>
@@ -272,6 +289,7 @@
         </div>
     </div>
 
+    <!-- HISTORY MODAL -->
     <div id="history-modal" class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 hidden flex flex-col justify-center items-center p-4">
         <div class="w-full max-w-sm bg-[#12121a] border border-gray-800 rounded-xl p-4 flex flex-col max-h-[80vh]">
             <div class="flex justify-between items-center border-b border-gray-800 pb-2 mb-3">
@@ -282,6 +300,7 @@
         </div>
     </div>
 
+    <!-- PERSISTENT NAVIGATION -->
     <nav class="bg-[#12121a] border-t border-gray-800 fixed bottom-0 left-0 right-0 z-40">
         <div class="container mx-auto max-w-md grid grid-cols-4 text-center">
             <button onclick="app.navigation.switchTab('dashboard')" id="nav-dashboard" class="py-3 flex flex-col items-center justify-center text-[#00f0ff] border-t-2 border-[#00f0ff] bg-[#00f0ff]/5">
@@ -303,6 +322,7 @@
         </div>
     </nav>
 
+    <!-- CORE LOGIC AND SUPABASE ENVIRONMENT RUNTIME -->
     <script>
         const SUPABASE_URL = "https://bvccmaadcezmqwczjdfa.supabase.co";
         const SUPABASE_KEY = "sb_publishable_noMR0qZ7qkGHOuf2LsxMtA_NfzYEHt2";
@@ -340,6 +360,15 @@
                         protein: food.protein, carbs: food.carbs, fat: food.fat,
                         sodium: food.sodium, sugar: food.sugar, image: food.image, identity_key: identityKey
                     }]);
+                    if (error) throw error;
+                },
+                updateGlobalFoodItem: async (id, food) => {
+                    const identityKey = `${food.name.toLowerCase()}/${food.brand.toLowerCase()}`;
+                    const { error } = await _supabase.from('global_foods').update({
+                        name: food.name, brand: food.brand, serving: food.serving,
+                        protein: food.protein, carbs: food.carbs, fat: food.fat,
+                        sodium: food.sodium, sugar: food.sugar, identity_key: identityKey
+                    }).eq('id', id);
                     if (error) throw error;
                 },
                 getUserProfile: async (userId) => {
@@ -427,7 +456,7 @@
                     
                     if (tabId === 'dashboard') await app.dashboard.render();
                     if (tabId === 'dailylog') await app.diary.renderCalendar();
-                    if (tabId === 'foods') await app.foods.renderCatalog();
+                    if (tabId === 'foods') { app.foods.clearForm(); await app.foods.renderCatalog(); }
                     if (tabId === 'profile') app.profile.renderProfile();
                 }
             },
@@ -441,7 +470,8 @@
                     foods.forEach((food) => {
                         const cal = Math.round((Number(food.protein) * 4) + (Number(food.carbs) * 4) + (Number(food.fat) * 9));
                         const item = document.createElement('div');
-                        item.className = "bg-black/20 border border-gray-800 rounded-lg p-3 flex items-center justify-between text-xs";
+                        item.className = "bg-black/20 border border-gray-800 rounded-lg p-3 flex items-center justify-between text-xs cursor-pointer hover:border-pink-500/50 transition-all";
+                        item.onclick = () => app.foods.loadItemIntoForm(food);
                         item.innerHTML = `
                             <div class="flex items-center gap-3">
                                 <div class="w-9 h-9 rounded-lg flex-shrink-0 flex items-center justify-center font-bold text-[10px] text-white" style="background: ${food.image || '#222'}; border: 1px solid rgba(255,255,255,0.05)">
@@ -457,7 +487,33 @@
                         container.appendChild(item);
                     });
                 },
+                loadItemIntoForm: (food) => {
+                    document.getElementById('food-editing-id').value = food.id;
+                    document.getElementById('food-name').value = food.name;
+                    document.getElementById('food-brand').value = food.brand;
+                    document.getElementById('food-serving').value = food.serving;
+                    document.getElementById('food-protein').value = food.protein;
+                    document.getElementById('food-carbs').value = food.carbs;
+                    document.getElementById('food-fat').value = food.fat;
+                    document.getElementById('food-sodium').value = food.sodium;
+                    document.getElementById('food-sugar').value = food.sugar;
+
+                    document.getElementById('food-form-title').innerText = "Modify Catalog Entry";
+                    document.getElementById('food-submit-btn').innerText = "Update Registry Asset";
+                    document.getElementById('food-clear-btn').classList.remove('hidden');
+                    document.getElementById('food-name').focus();
+                },
+                clearForm: () => {
+                    document.getElementById('food-editing-id').value = "";
+                    ['food-name', 'food-brand', 'food-serving', 'food-protein', 'food-carbs', 'food-fat', 'food-sodium', 'food-sugar'].forEach(id => {
+                        document.getElementById(id).value = '';
+                    });
+                    document.getElementById('food-form-title').innerText = "Global Database Registry";
+                    document.getElementById('food-submit-btn').innerText = "Register Item Globally";
+                    document.getElementById('food-clear-btn').classList.add('hidden');
+                },
                 createNewFoodEntry: async () => {
+                    const id = document.getElementById('food-editing-id').value;
                     const name = document.getElementById('food-name').value.trim();
                     const brand = document.getElementById('food-brand').value.trim();
                     const serving = parseFloat(document.getElementById('food-serving').value);
@@ -469,14 +525,19 @@
 
                     if (!name || !brand || isNaN(serving)) return alert('Fill out name, brand, and base metrics fields.');
 
-                    const colors = ['rgba(0,240,255,0.15)', 'rgba(255,0,127,0.15)', 'rgba(57,255,20,0.15)'];
-                    const chosenColor = colors[Math.floor(Math.random() * colors.length)];
+                    const payload = { name, brand, serving, protein, carbs, fat, sodium, sugar };
 
                     try {
-                        await app.db.saveGlobalFoodItem({ name, brand, serving, protein, carbs, fat, sodium, sugar, image: chosenColor });
-                        ['food-name', 'food-brand', 'food-serving', 'food-protein', 'food-carbs', 'food-fat', 'food-sodium', 'food-sugar'].forEach(id => {
-                            document.getElementById(id).value = '';
-                        });
+                        if (id) {
+                            await app.db.updateGlobalFoodItem(id, payload);
+                            alert("Database entry updated cleanly.");
+                        } else {
+                            const colors = ['rgba(0,240,255,0.15)', 'rgba(255,0,127,0.15)', 'rgba(57,255,20,0.15)'];
+                            payload.image = colors[Math.floor(Math.random() * colors.length)];
+                            await app.db.saveGlobalFoodItem(payload);
+                            alert("New asset added to catalog.");
+                        }
+                        app.foods.clearForm();
                         await app.foods.renderCatalog();
                     } catch(e) {
                         alert(e.message);
@@ -500,6 +561,20 @@
             },
 
             diary: {
+                filterSearchList: (mealKey) => {
+                    const query = document.getElementById(`search-food-${mealKey}`).value.toLowerCase();
+                    const select = document.getElementById(`select-food-${mealKey}`);
+                    select.innerHTML = '<option value="">+ Choose Searched Item</option>';
+                    
+                    app.state.cachedGlobalFoods.forEach((f, idx) => {
+                        if (f.name.toLowerCase().includes(query) || f.brand.toLowerCase().includes(query)) {
+                            const option = document.createElement('option');
+                            option.value = idx;
+                            option.innerText = `${f.name} (${f.brand})`;
+                            select.appendChild(option);
+                        }
+                    });
+                },
                 renderCalendar: async () => {
                     const grid = document.getElementById('calendar-grid');
                     grid.innerHTML = '';
@@ -566,33 +641,22 @@
                     const dayData = app.state.cachedLogs[app.state.selectedDate] || { meals: {} };
                     const totals = app.core.calculateDayTotals(dayData.meals);
                     
-                    const calEl = document.getElementById('day-summary-cal');
-                    const pEl = document.getElementById('day-summary-p');
-                    const cEl = document.getElementById('day-summary-c');
-                    const fEl = document.getElementById('day-summary-f');
+                    document.getElementById('day-summary-cal').innerText = totals.calories;
+                    document.getElementById('day-summary-p').innerText = ` ${totals.protein}/${app.state.cachedProfile.protein}g`;
+                    document.getElementById('day-summary-c').innerText = ` ${totals.carbs}/${app.state.cachedProfile.carbs}g`;
+                    document.getElementById('day-summary-f').innerText = ` ${totals.fat}/${app.state.cachedProfile.fat}g`;
 
-                    calEl.innerText = totals.calories;
-                    pEl.innerText = ` ${totals.protein}/${app.state.cachedProfile.protein}g`;
-                    cEl.innerText = ` ${totals.carbs}/${app.state.cachedProfile.carbs}g`;
-                    fEl.innerText = ` ${totals.fat}/${app.state.cachedProfile.fat}g`;
-
-                    const maxCal = (app.state.cachedProfile.protein * 4) + (app.state.cachedProfile.carbs * 4) + (app.state.cachedProfile.fat * 9);
-                    calEl.className = totals.calories > maxCal ? "text-red-500 font-bold" : "text-white font-bold";
-                    pEl.className = totals.protein > app.state.cachedProfile.protein ? "text-red-400" : "text-white";
-                    cEl.className = totals.carbs > app.state.cachedProfile.carbs ? "text-red-400" : "text-white";
-                    fEl.className = totals.fat > app.state.cachedProfile.fat ? "text-red-400" : "text-white";
-
-                    const mealTypes = ['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert'];
                     const container = document.getElementById('meals-container');
                     container.innerHTML = '';
 
                     const globalFoods = app.state.cachedGlobalFoods.length ? app.state.cachedGlobalFoods : await app.db.getGlobalFoods();
+                    const mealTypes = ['Breakfast', 'Lunch', 'Snack', 'Dinner', 'Dessert'];
 
                     mealTypes.forEach(mealKey => {
                         const lowKey = mealKey.toLowerCase();
                         const mealData = dayData.meals[lowKey] || { foods: [], photo: null };
                         
-                        let foodOptionsHtml = `<option value="">+ Add Food Entry</option>`;
+                        let foodOptionsHtml = `<option value="">+ Choose Searched Item</option>`;
                         globalFoods.forEach((f, idx) => {
                             foodOptionsHtml += `<option value="${idx}">${f.name} (${f.brand})</option>`;
                         });
@@ -602,10 +666,10 @@
                             const servingText = loggedFood.servingsUsed ? `${loggedFood.servingsUsed} serv` : `${loggedFood.amountUsed}g`;
                             rowsHtml += `
                                 <div class="flex justify-between items-center text-xs font-mono bg-black/40 px-2.5 py-1.5 rounded-lg border border-gray-800">
-                                    <span class="text-gray-300">${loggedFood.name}</span>
+                                    <span class="text-gray-300">${loggedFood.name} <span class="text-[10px] text-gray-500">(${loggedFood.brand})</span></span>
                                     <div class="flex items-center gap-3">
                                         <span class="text-gray-400 text-[11px] bg-gray-900 px-1.5 py-0.5 rounded">${servingText}</span>
-                                        <button onclick="app.diary.removeFoodFromMeal('${lowKey}', ${fIdx})" class="text-[#ff007f] font-bold hover:text-red-400 cursor-pointer text-sm">&times;</button>
+                                        <button onclick="app.diary.removeFoodFromMeal('${lowKey}', ${fIdx})" class="text-[#ff007f] font-bold hover:text-red-400 cursor-pointer text-sm" title="Remove Entry">&times;</button>
                                     </div>
                                 </div>
                             `;
@@ -623,14 +687,23 @@
                                 </div>
                             </div>
                             ${mealData.photo ? `<div class="relative w-full h-20 rounded-lg border border-gray-800 bg-cover bg-center" style="background-image: url('${mealData.photo}')"><button onclick="app.diary.removeMealPhoto('${lowKey}')" class="absolute top-1.5 right-1.5 bg-black/80 rounded-full w-5 h-5 flex items-center justify-center text-xs text-[#ff007f] cursor-pointer">&times;</button></div>` : ''}
+                            
                             <div class="space-y-1.5">${rowsHtml}</div>
-                            <div class="flex gap-2">
-                                <select id="select-food-${lowKey}" class="bg-black/60 border border-gray-800 text-gray-300 rounded-lg px-2 py-1 text-xs w-[50%] focus:outline-none focus:border-cyan-800">${foodOptionsHtml}</select>
-                                <input type="number" step="any" id="amount-food-${lowKey}" placeholder="Value" class="bg-black/60 border border-gray-800 text-white rounded-lg px-2 py-1 text-xs w-[25%] focus:outline-none focus:border-cyan-800">
-                                <select id="unit-food-${lowKey}" class="bg-black/60 border border-gray-800 text-gray-300 rounded-lg px-1 py-1 text-[11px] w-[25%] focus:outline-none">
-                                    <option value="servings">Servings</option>
-                                    <option value="grams">Grams</option>
-                                </select>
+                            
+                            <div class="space-y-2 pt-1 border-t border-gray-900">
+                                <div class="relative">
+                                    <input type="text" id="search-food-${lowKey}" oninput="app.diary.filterSearchList('${lowKey}')" placeholder="🔍 Search database catalog..." class="w-full bg-black/40 border border-gray-800 text-white rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-cyan-800">
+                                </div>
+                                <div class="flex gap-2">
+                                    <select id="select-food-${lowKey}" class="bg-black/60 border border-gray-800 text-gray-300 rounded-lg px-2 py-1 text-xs w-[50%] focus:outline-none focus:border-cyan-800">
+                                        ${foodOptionsHtml}
+                                    </select>
+                                    <input type="number" step="any" id="amount-food-${lowKey}" placeholder="Value" class="bg-black/60 border border-gray-800 text-white rounded-lg px-2 py-1 text-xs w-[25%] focus:outline-none focus:border-cyan-800">
+                                    <select id="unit-food-${lowKey}" class="bg-black/60 border border-gray-800 text-gray-300 rounded-lg px-1 py-1 text-[11px] w-[25%] focus:outline-none">
+                                        <option value="servings">Servings</option>
+                                        <option value="grams">Grams</option>
+                                    </select>
+                                </div>
                             </div>
                             <button onclick="app.diary.addFoodToMealTrigger('${lowKey}')" class="w-full bg-gray-800 hover:bg-gray-700 text-white text-xs py-1.5 rounded-md font-medium cursor-pointer transition-colors">+ Commit To Meal</button>
                         `;
@@ -649,15 +722,12 @@
 
                     if (foodIdx === "" || isNaN(inputVal) || inputVal <= 0) return alert('Input valid selection and measurement attributes.');
 
-                    // FIXED: Target cached runtime foods dictionary index mapping array structure
                     const base = app.state.cachedGlobalFoods[foodIdx];
                     if (!base) return alert("Selected data item registry error.");
                     
                     let grams = 0;
                     let servingsUsed = null;
                     let amountUsed = 0;
-
-                    // FIXED: Changed column reference pointing to `base.serving` to match the exact DB column definition layout
                     const baseServingWeight = Number(base.serving);
 
                     if (mode === 'servings') {
@@ -691,12 +761,25 @@
                     
                     valueInput.value = '';
                     select.value = '';
+                    if(document.getElementById(`search-food-${mealKey}`)) document.getElementById(`search-food-${mealKey}`).value = '';
                     
                     await app.diary.renderCalendar();
                 },
                 removeFoodFromMeal: async (mealKey, idx) => {
+                    if (!app.state.cachedLogs[app.state.selectedDate]?.meals[mealKey]) return;
+                    
+                    // Remove array element locally
                     app.state.cachedLogs[app.state.selectedDate].meals[mealKey].foods.splice(idx, 1);
-                    await app.db.saveMealLog(app.state.currentUser, app.state.selectedDate, mealKey, app.state.cachedLogs[app.state.selectedDate].meals[mealKey]);
+                    
+                    // Push clean structural log modifications back upstream to cloud database
+                    await app.db.saveMealLog(
+                        app.state.currentUser, 
+                        app.state.selectedDate, 
+                        mealKey, 
+                        app.state.cachedLogs[app.state.selectedDate].meals[mealKey]
+                    );
+                    
+                    // Re-render user view pipelines
                     await app.diary.renderCalendar();
                 },
                 handleMealPhotoUpload: (event, mealKey) => {
